@@ -47,6 +47,8 @@ assert 3 "{a = 3;;;;;a;}"
 assert 3 "{x = 3;y = &x; *y;}"
 assert 3 "{x = 3;y = &x; z = &y; **z;}"
 assert 10 "{x = 4;y = &x; z = &y; **z = 10; x;}"
+assert 19 "{foo = 3;bar = 4; for (i = 0;i < 10;i = i + 1) if(i > 5) foo = foo + bar; foo; }"
+
 
 
 

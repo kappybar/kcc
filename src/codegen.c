@@ -57,6 +57,8 @@ void codegen(Node *node) {
         printf(".Lelse%d:\n", cnt);
         if (node->els) {
             codegen(node->els);
+        } else {
+            printf("  push rax # debug\n");
         }
         printf(".Lend%d:\n", cnt);
         return;
