@@ -8,19 +8,36 @@ int main(int argc,char *argv[]) {
 
     // tokenize
     Token *token = tokenize(argv[1]);
-    fprintf(stderr, "tokenize finish \n");
-    display_token(token);
+    // for debug
+    // fprintf(stderr, "tokenize finish \n");
+    // display_token(token);
 
     // parse
     Node *node = parse(&token);
-    fprintf(stderr, "parse finish\n");
+    // for debug
+    // fprintf(stderr, "parse finish\n");
+    // display_nodes(node);
 
     // codegen
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
     printf("main:\n");
-    codegen(node);
-    printf("  pop rax\n");
+
+    // explicit main function
+    // prologue
+    int offset = locals ? locals->offset + 8 : 0;
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", offset);
+
+    for (Node *cur = node;cur;cur = cur->next) {
+        codegen(cur);
+        printf("  pop rax\n");
+    }
+
+    // epilogue
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
     printf("  ret\n");
     return 0;
 }

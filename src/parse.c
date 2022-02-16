@@ -1,5 +1,7 @@
 #include "kcc.h"
 
+Obj *locals;
+
 bool equal(Token *token, char *s) {
     return (memcmp(token->str, s, token->len) == 0) && s[token->len] == '\0';
 }
@@ -23,6 +25,13 @@ bool consume(Token **token, char *op) {
     return true;
 }
 
+Token *consume_ident(Token **token) {
+    if ((*token)->kind != TkIdent) return NULL;
+    Token *token_return = *token;
+    *token = (*token)->next;
+    return token_return;
+}
+
 void expect(Token **token, char *op) {
     if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token);
     *token = (*token)->next;
@@ -36,6 +45,37 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Obj *find_obj(char *name, int len) {
+    for (Obj *obj = locals;obj; obj = obj->next) {
+        if (len == obj->len && strncmp(name, obj->name, len) == 0) {
+            return obj;
+        }
+    }
+    return NULL;
+}
+
+Obj *new_obj(Token *token) {
+    Obj *obj = calloc(1, sizeof(Obj));
+    obj->next = locals;
+    obj->len = token->len;
+    obj->name = token->str;
+    obj->offset = locals ? locals->offset + 8 : 0;
+    locals = obj;
+    return obj;
+}
+ 
+Node *new_node_lvar(Token *token) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = NdLvar;
+    Obj *obj = find_obj(token->str, token->len);
+    if (obj) {
+        node->obj = obj;
+    } else {
+        node->obj = new_obj(token);
+    }
+    return node;
+}
+
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
@@ -44,11 +84,16 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
-// primary = number | "(" add ")"
+// primary = number | ident | "(" expr ")"
 Node *primary(Token **token) {
     if (consume(token, "(")) {
         Node *node = expr(token);
         expect(token, ")");
+        return node;
+    }
+    Token *token_ident = consume_ident(token);
+    if (token_ident) {
+        Node *node = new_node_lvar(token_ident);
         return node;
     }
     int val = expect_number(token);
@@ -66,7 +111,7 @@ Node *unary(Token **token) {
     }
 }
 
-// mul = primary ("*"" unary | "/" unary) *
+// mul = primary ("*" unary | "/" unary) *
 Node *mul(Token **token) {
     Node *node = unary(token);
 
@@ -150,31 +195,46 @@ Node *equality(Token **token) {
     return node;
 }
 
-// expr = equality
+// assign = equality ("=" assign) ?
+Node *assign(Token **token) {
+    Node *node = equality(token);
+    
+    if (consume(token, "=")) {
+        node = new_node(NdAssign, node, assign(token));
+    }
+
+    return node;
+}
+
+// expr = assign
 Node *expr(Token **token) {
-    return equality(token);
+    return assign(token);
+}
+
+// stmt = expr ";"
+Node *stmt(Token **token) {
+    Node *node = expr(token);
+    expect(token, ";");
+    return node;
+}
+
+// program = stmt*
+Node *program(Token **token) {
+    Node head;
+    head.next = NULL;
+    Node *cur = &head;
+
+    while(!at_eof(*token)) {
+        cur->next = stmt(token);
+        cur = cur->next;
+    }
+
+    return head.next;
 }
 
 Node *parse(Token **token) {
-    // Token *cur = token;
-    // int val = expect_number(&cur);
-    // Node *node = new_node_num(val);
+    Node *node = program(token);
 
-    // while (!at_eof(cur)) {
-    //     if (consume(&cur, "+")) {
-    //         int val = expect_number(&cur);
-    //         node = new_node(NdAdd, node, new_node_num(val));
-    //         continue;
-    //     }
-    //     if (consume(&cur, "-")) {
-    //         int val = expect_number(&cur);
-    //         node = new_node(NdSub, node, new_node_num(val));
-    //         continue;
-    //     }
-    //     error_parse(cur);
-    // }
-
-    Node *node = expr(token);
     if (!at_eof(*token)) {
         error_parse(*token);
     }

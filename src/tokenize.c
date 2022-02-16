@@ -1,25 +1,5 @@
 #include "kcc.h"
 
-void display_token(Token *token) {
-    for (Token *cur = token;cur;cur = cur->next) {
-        char s[cur->len + 1];
-        s[cur->len] = '\0';
-        switch (cur->kind) {
-        case TkReserved:
-            strncpy(s, cur->str, cur->len);
-            fprintf(stderr, "Reserved : %s\n", s);
-            break;
-        case TkNum:
-            fprintf(stderr, "Num : %d\n", cur->val);
-            break;
-        case TkEof:
-            fprintf(stderr, "eof\n");
-            break;
-        }
-    }
-    return;
-}
-
 bool startwith(char *p, char *q) {
     return strncmp(p, q, strlen(q)) == 0;
 }
@@ -32,6 +12,14 @@ int isreserved(char *p) {
         return 1;
     }
     return 0;
+}
+
+bool is_ident1(char *p) {
+    return ('a' <= *p && *p <= 'z' || 'A' <= *p && *p <= 'Z' || *p == '_');
+}
+
+bool is_ident2(char *p) {
+    return is_ident1(p) || ('0' <= *p && *p <= '9');
 }
 
 // curに新しいTokenを繋げる。
@@ -69,6 +57,15 @@ Token *tokenize(char *p) {
             cur = new_token(TkReserved, cur, p);
             cur->len = len;
             p += len;
+            continue;
+        }
+
+        // ident
+        if (is_ident1(p)) {
+            cur = new_token(TkIdent, cur, p);
+            char *start = p;
+            while(is_ident2(p)) p++;
+            cur->len = p - start;
             continue;
         }
 

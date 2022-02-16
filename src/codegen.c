@@ -1,9 +1,41 @@
 #include "kcc.h"
 
+void gen_addr(Node *node) {
+    char s[100];
+    switch (node->kind) {
+    case NdLvar:
+        strncpy(s, node->obj->name, node->obj->len);
+        s[node->obj->len] = '\0';
+        printf("  lea rax, [rbp%+d] # %s\n", -node->obj->offset, s);
+        printf("  push rax\n");
+        break;   
+    default:
+        error_codegen(); 
+    }
+
+} 
+
 void codegen(Node *node) {
-    if (node->kind == NdNum) {
+    switch (node->kind) {
+    case NdNum:
         printf("  push %d\n", node->val);
         return;
+    case NdLvar:
+        gen_addr(node);
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
+    case NdAssign:
+        gen_addr(node->lhs);
+        codegen(node->rhs);
+        printf("  pop rdi # rhs \n"); 
+        printf("  pop rax # lhs addr \n"); 
+        printf("  mov [rax], rdi\n");
+        printf("  push rdi\n");
+        return;
+    default:
+        break;
     }
 
     codegen(node->lhs);
