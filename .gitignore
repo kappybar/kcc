@@ -1,0 +1,6 @@
+kcc
+kcc.sh
+
+*.o
+tmp*
+.DS_Store
