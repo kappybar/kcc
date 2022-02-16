@@ -32,6 +32,12 @@ Token *consume_ident(Token **token) {
     return token_return;
 }
 
+bool consume_keyword(Token **token, char *keyword) {
+    if ((*token)->kind != TkKeyword || !equal(*token, keyword)) return false;
+    *token = (*token)->next;
+    return true;
+}
+
 void expect(Token **token, char *op) {
     if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token);
     *token = (*token)->next;
@@ -211,8 +217,14 @@ Node *expr(Token **token) {
     return assign(token);
 }
 
-// stmt = expr ";"
+// stmt = expr ";" |
+//        "return" expr ";"
 Node *stmt(Token **token) {
+    if (consume_keyword(token, "return")) {
+        Node *node = new_node(NdReturn, expr(token), NULL);
+        expect(token, ";");
+        return node;
+    }
     Node *node = expr(token);
     expect(token, ";");
     return node;

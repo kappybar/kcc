@@ -33,6 +33,8 @@ assert 4 " (0 >= 0) + (5 > 2) + (3 == 3) + (1 != 3) + (0 < 0) + (2 <= 1) + (3 !=
 assert 7 " foo = 3;bar = 4;foo + bar;"
 assert 6 " a = b = 3;a+b;"
 assert 9 " a = b = 3;c = d = 2;a * b + c - d;"
+assert 7 "a = 3; b = 4; return a+b;"
+assert 11 "return 5 * 3 - 4;a = 4 + 3;"
 
 
 

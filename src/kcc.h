@@ -14,6 +14,7 @@ typedef enum {
     TkReserved, // reserved word
     TkNum,      // number
     TkIdent,    // Identifier
+    TkKeyword,  // return
     TkEof       // end of file
 } TokenKind;
 
@@ -25,7 +26,7 @@ struct Token {
     char *str;     // このTokenの文字列
     int len;       // このTokenの長さ
 
-    int val;       // kindがTokinNumであるときの数字 
+    int val;       // kindがTkNumであるときの数字 
 };
 
 Token *new_token(TokenKind kind, Token *cur, char *str);
@@ -58,6 +59,7 @@ typedef enum {
     NdLe,     // <=
     NdAssign, // =
     NdLvar,   // Local variable
+    NdReturn  // return
 } NodeKind;
 
 typedef struct Node Node;

@@ -22,6 +22,25 @@ bool is_ident2(char *p) {
     return is_ident1(p) || ('0' <= *p && *p <= '9');
 }
 
+bool is_keyword(Token *token) {
+    char *keywords[] = {"return"};
+    for (int i = 0;i < 1; i++) {
+        if (token->len == strlen(keywords[i]) && strncmp(token->str, keywords[i], token->len) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void convert_keyword(Token *token) {
+    for (Token *cur = token;cur;cur = cur->next) {
+        if (is_keyword(cur)) {
+            cur->kind = TkKeyword;
+            return;
+        }
+    }
+}
+
 // curに新しいTokenを繋げる。
 // head -> ... -> cur
 // head -> ... -> cur -> token　になる。
@@ -73,5 +92,6 @@ Token *tokenize(char *p) {
     }
 
     new_token(TkEof, cur, p);
+    convert_keyword(head.next);
     return head.next;
 }

@@ -34,6 +34,13 @@ void codegen(Node *node) {
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;
+    case NdReturn:
+        codegen(node->lhs);
+        printf("  pop rax # return value \n"); 
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+        return;
     default:
         break;
     }

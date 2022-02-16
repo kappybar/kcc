@@ -16,6 +16,10 @@ void display_token(Token *token) {
             strncpy(s, cur->str, cur->len);
             fprintf(stderr, "Ident : %s\n", s);
             break;
+        case TkKeyword:
+            strncpy(s, cur->str, cur->len);
+            fprintf(stderr, "Keyword : %s\n", s);
+            break;
         case TkEof:
             fprintf(stderr, "eof\n");
             break;
@@ -95,6 +99,10 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "Assign\n");
         display_child(node, indent);
         break;
+    case NdReturn:
+        fprintf(stderr, "Return\n");
+        display_node(node->lhs, indent + 1);
+        break;     
     default:
         break;
     }
