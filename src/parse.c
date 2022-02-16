@@ -227,12 +227,52 @@ Node *expr(Token **token) {
     return assign(token);
 }
 
-// stmt = expr ";" |
-//        "return" expr ";"
+// stmt =   expr ";" 
+//        | "return" expr ";"
+//        | "if" "(" expr ")" stmt ("else" stmt) ?
+//        | "while" "(" expr ")" stmt 
+//        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
         Node *node = new_node(NdReturn, expr(token), NULL);
         expect(token, ";");
+        return node;
+    }
+    if (consume_keyword(token, "if")) {
+        expect(token, "(");
+        Node *node = new_node(NdIf, NULL, NULL);
+        node->cond = expr(token);
+        expect(token, ")");
+        node->then = stmt(token);
+        if (consume_keyword(token, "else")) {
+            node->els = stmt(token);
+        }
+        return node;
+    }
+    if (consume_keyword(token, "while")) {
+        expect(token, "(");
+        Node *node = new_node(NdFor, NULL, NULL);
+        node->cond = expr(token);
+        expect(token, ")");
+        node->then = stmt(token);
+        return node;
+    }
+    if (consume_keyword(token, "for")) {
+        expect(token, "(");
+        Node *node = new_node(NdFor, NULL, NULL);
+        if (!consume(token, ";")) {
+            node->init = expr(token);
+            expect(token, ";");
+        }
+        if (!consume(token, ";")) {
+            node->cond = expr(token);
+            expect(token, ";");
+        }
+        if (!consume(token, ")")) {
+            node->inc = expr(token);
+            expect(token, ")");
+        }
+        node->then = stmt(token);
         return node;
     }
     Node *node = expr(token);

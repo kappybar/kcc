@@ -48,18 +48,20 @@ struct Obj {
 extern Obj *locals;
 
 typedef enum {
-    NdNum,    // num
-    NdAdd,    // +
-    NdSub,    // -
-    NdMul,    // *
-    NdDiv,    // /
-    NdEq,     // ==
-    NdNeq,    // !=
-    NdLt,     // <
-    NdLe,     // <=
-    NdAssign, // =
-    NdLvar,   // Local variable
-    NdReturn  // return
+    NdNum,     // num
+    NdAdd,     // +
+    NdSub,     // -
+    NdMul,     // *
+    NdDiv,     // /
+    NdEq,      // ==
+    NdNeq,     // !=
+    NdLt,      // <
+    NdLe,      // <=
+    NdAssign,  // =
+    NdLvar,    // Local variable
+    NdReturn,  // return
+    NdIf,      // if
+    NdFor      // for
 } NodeKind;
 
 typedef struct Node Node;
@@ -69,6 +71,12 @@ struct Node {
     Node *next;
     Node *lhs; // left hand side
     Node *rhs; // right hand side
+
+    Node *cond;
+    Node *then;
+    Node *els;
+    Node *init;
+    Node *inc;
 
     int val;   // kindがNdNumのとき、その値
     Obj *obj;  // 
@@ -98,6 +106,7 @@ void codegen_function(Function *func);
 // util.c
 //
 
+int counter();
 void error_tokenize(char *p);
 void error_parse(Token *token);
 void error_codegen();

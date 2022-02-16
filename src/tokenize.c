@@ -23,8 +23,8 @@ bool is_ident2(char *p) {
 }
 
 bool is_keyword(Token *token) {
-    char *keywords[] = {"return"};
-    for (int i = 0;i < 1; i++) {
+    char *keywords[] = {"return", "if", "else", "while", "for"};
+    for (int i = 0;i < 5; i++) {
         if (token->len == strlen(keywords[i]) && strncmp(token->str, keywords[i], token->len) == 0) {
             return true;
         }
@@ -36,9 +36,9 @@ void convert_keyword(Token *token) {
     for (Token *cur = token;cur;cur = cur->next) {
         if (is_keyword(cur)) {
             cur->kind = TkKeyword;
-            return;
         }
     }
+    return;
 }
 
 // curに新しいTokenを繋げる。

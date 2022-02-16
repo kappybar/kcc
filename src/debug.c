@@ -102,7 +102,40 @@ void display_node(Node *node, int indent) {
     case NdReturn:
         fprintf(stderr, "Return\n");
         display_node(node->lhs, indent + 1);
-        break;     
+        break;  
+    case NdIf:
+        fprintf(stderr, "If\n");
+        display_node(node->cond, indent + 1);
+        display_space(indent);
+        fprintf(stderr, "Then\n");
+        display_node(node->then, indent + 1);
+        if (node->els) {
+            display_space(indent);
+            fprintf(stderr, "Else\n");
+            display_node(node->els, indent + 1);
+        }
+        break;  
+    case NdFor:
+        fprintf(stderr, "For\n");
+        if (node->init) {
+            display_space(indent);
+            fprintf(stderr, "Init\n");
+            display_node(node->init, indent + 1);
+        }
+        if (node->cond) {
+            display_space(indent);
+            fprintf(stderr, "Cond\n");
+            display_node(node->cond, indent + 1);
+        }
+        if (node->inc) {
+            display_space(indent);
+            fprintf(stderr, "Inc\n");
+            display_node(node->inc, indent + 1);
+        }
+        display_space(indent);
+        fprintf(stderr, "Body\n");
+        display_node(node->then, indent + 1);
+        break; 
     default:
         break;
     }

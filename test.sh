@@ -35,6 +35,10 @@ assert 6 " a = b = 3;a+b;"
 assert 9 " a = b = 3;c = d = 2;a * b + c - d;"
 assert 7 "a = 3; b = 4; return a+b;"
 assert 11 "return 5 * 3 - 4;a = 4 + 3;"
+assert 12 "if (1) 12; else 3;"
+assert 10 "foo = 3;bar = 4; if (foo == 3) bar = bar + 2; foo +bar + 1;"
+assert 13 "a = 3; for(i = 0;i < 10;i = i + 1) a = a + 1; return a;"
+assert 10 "i = 3; for(;i < 10;) i = i + 1; return i;"
 
 
 

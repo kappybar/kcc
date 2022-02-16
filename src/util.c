@@ -1,5 +1,10 @@
 #include "kcc.h"
 
+int counter() {
+    static int count = 0;
+    return count++;
+}
+
 void error_tokenize(char *p) {
     fprintf(stderr, "%s\n", p);
     fprintf(stderr, "^ tokenize error\n");

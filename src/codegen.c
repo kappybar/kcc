@@ -41,6 +41,44 @@ void codegen(Node *node) {
         printf("  pop rbp\n");
         printf("  ret\n");
         return;
+    case NdIf: {
+        int cnt = counter();
+        codegen(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lelse%d\n", cnt);
+        codegen(node->then);
+        printf("  jmp .Lend%d\n", cnt);
+        printf(".Lelse%d:\n", cnt);
+        if (node->els) {
+            codegen(node->els);
+        }
+        printf(".Lend%d:\n", cnt);
+        return;
+    }
+    case NdFor : {
+        int cnt = counter();
+        if (node->init) {
+            codegen(node->init);
+            printf("  pop rax # init%d\n", cnt);
+        }
+        printf(".Lcond%d:\n", cnt);
+        if (node->cond) {
+            codegen(node->cond);
+            printf("  pop rax # cond%d\n", cnt);
+            printf("  cmp rax, 0\n");
+            printf("  je .Lend%d\n", cnt);
+        }
+        codegen(node->then);
+        printf("  pop rax # then%d\n", cnt);
+        if (node->inc) {
+            codegen(node->inc);
+            printf("  pop rax # inc%d\n", cnt);
+        }
+        printf("  jmp .Lcond%d\n", cnt);
+        printf(".Lend%d:\n", cnt);
+        return;
+    }
     default:
         break;
     }
