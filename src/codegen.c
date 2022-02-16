@@ -79,6 +79,13 @@ void codegen(Node *node) {
         printf(".Lend%d:\n", cnt);
         return;
     }
+    case NdBlock :
+        for (Node *cur = node->body;cur;cur = cur->next) {
+            codegen(cur);
+            printf("  pop rax\n");
+        }
+        printf("  push rax\n");
+        return;
     default:
         break;
     }

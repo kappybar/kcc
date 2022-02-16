@@ -10,6 +10,8 @@ Node *relational (Token **token);
 Node *assign(Token **token);
 Node *equality(Token **token);
 Node *expr(Token **token);
+Node *stmt(Token **token);
+Node *compound_stmt(Token **token);
 Function *program(Token **token);
 
 bool equal(Token *token, char *s) {
@@ -232,6 +234,7 @@ Node *expr(Token **token) {
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
 //        | "while" "(" expr ")" stmt 
 //        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//        | "{" compound_stmt
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
         Node *node = new_node(NdReturn, expr(token), NULL);
@@ -275,24 +278,42 @@ Node *stmt(Token **token) {
         node->then = stmt(token);
         return node;
     }
+    if (consume(token, "{")) {
+        Node *node = new_node(NdBlock, NULL, NULL);
+        node->body = compound_stmt(token);;
+        return node;
+    }
     Node *node = expr(token);
     expect(token, ";");
     return node;
 }
 
-// program = stmt*
-Function *program(Token **token) {
+// compound_stmt = stmt* "}"
+Node *compound_stmt(Token **token) {
     Node head;
     head.next = NULL;
     Node *cur = &head;
 
-    while(!at_eof(*token)) {
+    while(!consume(token, "}")) {
         cur->next = stmt(token);
         cur = cur->next;
     }
 
+    return head.next;
+}
+
+// program = "{" compound_stmt
+Function *program(Token **token) {
+    expect(token, "{");
+
+    Node *node = compound_stmt(token);
+    if (!at_eof(*token)) {
+        printf("err");
+        error_parse(*token);
+    }
+
     Function *func = calloc(1, sizeof(Function));
-    func->body = head.next;
+    func->body = node;
     func->locals = locals;
     func->stack_size = locals ? locals->offset + 8 : 0;
     locals = NULL;

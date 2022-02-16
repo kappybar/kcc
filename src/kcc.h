@@ -61,7 +61,8 @@ typedef enum {
     NdLvar,    // Local variable
     NdReturn,  // return
     NdIf,      // if
-    NdFor      // for
+    NdFor,     // for
+    NdBlock    // { .. }
 } NodeKind;
 
 typedef struct Node Node;
@@ -77,6 +78,8 @@ struct Node {
     Node *els;
     Node *init;
     Node *inc;
+
+    Node *body;
 
     int val;   // kindがNdNumのとき、その値
     Obj *obj;  // 

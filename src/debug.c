@@ -136,6 +136,13 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "Body\n");
         display_node(node->then, indent + 1);
         break; 
+    case NdBlock:
+        fprintf(stderr, "Block\n");
+        for (Node *cur = node->body;cur;cur = cur->next) {
+            display_node(cur, indent + 1);
+            fprintf(stderr, "\n");
+        }
+        break;
     default:
         break;
     }
