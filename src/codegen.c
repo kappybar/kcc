@@ -84,7 +84,7 @@ void codegen(Node *node) {
             codegen(cur);
             printf("  pop rax\n");
         }
-        printf("  push rax\n");
+        printf("  push rax # Block\n");
         return;
     default:
         break;

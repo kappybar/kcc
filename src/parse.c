@@ -229,7 +229,7 @@ Node *expr(Token **token) {
     return assign(token);
 }
 
-// stmt =   expr ";" 
+// stmt =   expr? ";" 
 //        | "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
 //        | "while" "(" expr ")" stmt 
@@ -281,6 +281,10 @@ Node *stmt(Token **token) {
     if (consume(token, "{")) {
         Node *node = new_node(NdBlock, NULL, NULL);
         node->body = compound_stmt(token);;
+        return node;
+    }
+    if (consume(token, ";")) {
+        Node *node = new_node(NdBlock, NULL, NULL);
         return node;
     }
     Node *node = expr(token);
