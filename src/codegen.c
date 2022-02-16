@@ -1,5 +1,7 @@
 #include "kcc.h"
 
+void codegen(Node *node);
+
 void gen_addr(Node *node) {
     char s[100];
     switch (node->kind) {
@@ -8,7 +10,10 @@ void gen_addr(Node *node) {
         s[node->obj->len] = '\0';
         printf("  lea rax, [rbp%+d] # %s\n", -node->obj->offset, s);
         printf("  push rax\n");
-        break;   
+        break; 
+    case NdDeref:
+        codegen(node->lhs);
+        break;
     default:
         error_codegen(); 
     }
@@ -85,6 +90,17 @@ void codegen(Node *node) {
             printf("  pop rax\n");
         }
         printf("  push rax # Block\n");
+        return;
+    case NdDeref:
+        // not safe
+        // node->lhs type should be pointer type
+        codegen(node->lhs);
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  push rax\n");
+        return;
+    case NdRef:
+        gen_addr(node->lhs);
         return;
     default:
         break;

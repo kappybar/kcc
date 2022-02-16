@@ -118,12 +118,17 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// unary = ("+" | "-")? primary
+// unary =  ("+" | "-") ? primary
+//        | ("*" | "&") unary
 Node *unary(Token **token) {
     if (consume(token, "+")) {
         return primary(token);
     } else if (consume(token, "-")) {
         return new_node(NdSub, new_node_num(0), primary(token));
+    } else if (consume(token, "*")) {
+        return new_node(NdDeref, unary(token), NULL);
+    } else if (consume(token, "&")) {
+        return new_node(NdRef, unary(token), NULL);
     } else {
         return primary(token);
     }

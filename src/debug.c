@@ -143,6 +143,14 @@ void display_node(Node *node, int indent) {
             fprintf(stderr, "\n");
         }
         break;
+    case NdDeref:
+        fprintf(stderr, "Deref\n");
+        display_node(node->lhs, indent + 1);
+        break;
+    case NdRef:
+        fprintf(stderr, "Ref\n");
+        display_node(node->lhs, indent + 1);
+        break;
     default:
         break;
     }

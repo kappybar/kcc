@@ -62,7 +62,9 @@ typedef enum {
     NdReturn,  // return
     NdIf,      // if
     NdFor,     // for
-    NdBlock    // { .. }
+    NdBlock,   // { .. }
+    NdDeref,   // *
+    NdRef      // &
 } NodeKind;
 
 typedef struct Node Node;
