@@ -74,26 +74,25 @@ struct Node {
     Obj *obj;  // 
 };
 
+typedef struct Function Function;
+
+struct Function {
+    Node *body;
+    Obj *locals;
+    int stack_size;
+};
+
 bool equal(Token *token, char *s);
 bool at_eof(Token *token);
 bool consume(Token **token, char *op);
 int expect_number(Token **token);
-Node *new_node_num(int val);
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-Node *primary(Token **token);
-Node *unary(Token **token);
-Node *add(Token **token);
-Node *mul(Token **token);
-Node *relational (Token **token);
-Node *equality(Token **token);
-Node *expr(Token **token);
-Node *parse(Token **token);
+Function *parse(Token **token);
 
 //
 // codegen.c
 //
 
-void codegen(Node *node);
+void codegen_function(Function *func);
 
 //
 // util.c
@@ -108,4 +107,4 @@ void error_codegen();
 //
 
 void display_token(Token *token);
-void display_nodes(Node *node);
+void display_function(Function *func);

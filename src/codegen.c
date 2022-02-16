@@ -91,3 +91,24 @@ void codegen(Node *node) {
     printf("  push rax\n");
     return;
 }
+
+void codegen_function(Function *func) {
+    printf(".globl main\n");
+    printf("main:\n");
+
+    // prologue
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", func->stack_size);
+
+    for (Node *cur = func->body;cur;cur = cur->next) {
+        codegen(cur);
+        printf("  pop rax\n");
+    }
+
+    // epilogue
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
+    return;
+}

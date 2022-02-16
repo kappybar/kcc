@@ -2,6 +2,16 @@
 
 Obj *locals;
 
+Node *primary(Token **token);
+Node *unary(Token **token);
+Node *add(Token **token);
+Node *mul(Token **token);
+Node *relational (Token **token);
+Node *assign(Token **token);
+Node *equality(Token **token);
+Node *expr(Token **token);
+Function *program(Token **token);
+
 bool equal(Token *token, char *s) {
     return (memcmp(token->str, s, token->len) == 0) && s[token->len] == '\0';
 }
@@ -231,7 +241,7 @@ Node *stmt(Token **token) {
 }
 
 // program = stmt*
-Node *program(Token **token) {
+Function *program(Token **token) {
     Node head;
     head.next = NULL;
     Node *cur = &head;
@@ -241,15 +251,14 @@ Node *program(Token **token) {
         cur = cur->next;
     }
 
-    return head.next;
+    Function *func = calloc(1, sizeof(Function));
+    func->body = head.next;
+    func->locals = locals;
+    func->stack_size = locals ? locals->offset + 8 : 0;
+    locals = NULL;
+    return func;
 }
 
-Node *parse(Token **token) {
-    Node *node = program(token);
-
-    if (!at_eof(*token)) {
-        error_parse(*token);
-    }
-
-    return node;
+Function *parse(Token **token) {
+    return program(token);
 }

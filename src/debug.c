@@ -109,8 +109,8 @@ void display_node(Node *node, int indent) {
     return;
 }
 
-void display_nodes(Node *node) {
-    for (Node *cur = node ;cur; cur = cur->next) {
+void display_function(Function *func) {
+    for (Node *cur = func->body ;cur; cur = cur->next) {
         display_node(cur, 0);
         fprintf(stderr, "\n");
     }

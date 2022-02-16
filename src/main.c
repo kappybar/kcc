@@ -9,35 +9,36 @@ int main(int argc,char *argv[]) {
     // tokenize
     Token *token = tokenize(argv[1]);
     // for debug
-    // fprintf(stderr, "tokenize finish \n");
-    // display_token(token);
+    fprintf(stderr, "tokenize finish \n");
+    display_token(token);
 
     // parse
-    Node *node = parse(&token);
+    Function *func = parse(&token);
     // for debug
-    // fprintf(stderr, "parse finish\n");
-    // display_nodes(node);
+    fprintf(stderr, "parse finish\n");
+    display_function(func);
 
     // codegen
     printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
+    codegen_function(func);
+    // printf(".globl main\n");
+    // printf("main:\n");
 
-    // explicit main function
-    // prologue
-    int offset = locals ? locals->offset + 8 : 0;
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", offset);
+    // // explicit main function
+    // // prologue
+    // int offset = locals ? locals->offset + 8 : 0;
+    // printf("  push rbp\n");
+    // printf("  mov rbp, rsp\n");
+    // printf("  sub rsp, %d\n", offset);
 
-    for (Node *cur = node;cur;cur = cur->next) {
-        codegen(cur);
-        printf("  pop rax\n");
-    }
+    // for (Node *cur = node;cur;cur = cur->next) {
+    //     codegen(cur);
+    //     printf("  pop rax\n");
+    // }
 
-    // epilogue
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
+    // // epilogue
+    // printf("  mov rsp, rbp\n");
+    // printf("  pop rbp\n");
+    // printf("  ret\n");
     return 0;
 }
