@@ -28,11 +28,36 @@ void display_token(Token *token) {
     return;
 }
 
+void display_type(Type *type) {
+    int cnt = 0;
+    Type *ty;
+    for (ty = type; ty->kind == TyPtr; ty = ty->ptr_to) {
+        cnt ++;
+    } 
+    char s[100];
+    int width;
+    switch (ty->kind) {
+    case TyInt:
+        width = 3;
+        strncpy(s, "int", width);
+        break;
+    default:
+        break;
+    }
+    s[width] = ' ';
+    for (int i = 0;i < cnt; i++) s[i + width + 1] = '*';
+    s[cnt + width + 1] = '\0';
+    fprintf(stderr, "type : %s", s);
+    return;
+}
+
 void display_obj(Obj *obj) {
     char s[obj->len + 1];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
-    fprintf(stderr, "(%s, offset : %d)", s, obj->offset);
+    fprintf(stderr, "(%s, offset : %d, ", s, obj->offset);
+    display_type(obj->type);
+    fprintf(stderr, ")");
     return;
 }
 

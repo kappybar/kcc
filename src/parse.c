@@ -44,10 +44,26 @@ Token *consume_ident(Token **token) {
     return token_return;
 }
 
+Token *expect_ident(Token **token) {
+    if ((*token)->kind != TkIdent) {
+        error_parse(*token);
+        return NULL;
+    }    
+    Token *token_return = *token;
+    *token = (*token)->next;
+    return token_return;
+}
+
 bool consume_keyword(Token **token, char *keyword) {
     if ((*token)->kind != TkKeyword || !equal(*token, keyword)) return false;
     *token = (*token)->next;
     return true;
+}
+
+void expect_keyword(Token **token, char *keyword) {
+    if ((*token)->kind != TkKeyword || !equal(*token, keyword)) error_parse(*token);
+    *token = (*token)->next;
+    return;
 }
 
 void expect(Token **token, char *op) {
@@ -63,34 +79,39 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Obj *find_obj(char *name, int len) {
+Obj *find_obj(Token *token, bool should_exist) {
+    char *name = token->str;
+    int len = token->len;
     for (Obj *obj = locals;obj; obj = obj->next) {
         if (len == obj->len && strncmp(name, obj->name, len) == 0) {
+            if (!should_exist) {
+                error_parse(token);
+            }
             return obj;
         }
+    }
+    if (should_exist) {
+        error_parse(token);
     }
     return NULL;
 }
 
-Obj *new_obj(Token *token) {
+Obj *new_obj(Token *token, Type *type) {
     Obj *obj = calloc(1, sizeof(Obj));
     obj->next = locals;
     obj->len = token->len;
     obj->name = token->str;
     obj->offset = locals ? locals->offset + 8 : 0;
+    obj->type = type;
     locals = obj;
     return obj;
 }
  
-Node *new_node_lvar(Token *token) {
+Node *new_node_lvar(Token *token, Obj *obj) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = NdLvar;
-    Obj *obj = find_obj(token->str, token->len);
-    if (obj) {
-        node->obj = obj;
-    } else {
-        node->obj = new_obj(token);
-    }
+    node->obj = obj;
+    node->type = obj->type;
     return node;
 }
 
@@ -111,7 +132,8 @@ Node *primary(Token **token) {
     }
     Token *token_ident = consume_ident(token);
     if (token_ident) {
-        Node *node = new_node_lvar(token_ident);
+        Obj *obj = find_obj(token_ident, true); // should_exist = false
+        Node *node = new_node_lvar(token_ident, obj);
         return node;
     }
     int val = expect_number(token);
@@ -234,6 +256,26 @@ Node *expr(Token **token) {
     return assign(token);
 }
 
+// declspec = "int"
+Type *declspec(Token **token) {
+    expect_keyword(token, "int");
+    return new_type(TyInt);
+}
+
+// declaration = declspec "*"* ident ";"
+Node *declaration(Token **token) {
+    Type *type = declspec(token);
+    while (consume(token, "*")) {
+        type = new_type_ptr(type);
+    }
+    Token *token_ident = expect_ident(token);
+    find_obj(token_ident, false); // should_exist = false
+    Obj *obj = new_obj(token_ident, type);
+    Node *node = new_node_lvar(token_ident, obj);
+    expect(token, ";");
+    return node;
+}
+
 // stmt =   expr? ";" 
 //        | "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
@@ -297,15 +339,20 @@ Node *stmt(Token **token) {
     return node;
 }
 
-// compound_stmt = stmt* "}"
+// compound_stmt = (declaration | stmt)* "}"
 Node *compound_stmt(Token **token) {
     Node head;
     head.next = NULL;
     Node *cur = &head;
 
     while(!consume(token, "}")) {
-        cur->next = stmt(token);
-        cur = cur->next;
+        if (equal(*token, "int")) {
+            cur->next = declaration(token);
+            cur = cur->next;
+        } else {
+            cur->next = stmt(token);
+            cur = cur->next;
+        }
     }
 
     return head.next;

@@ -33,6 +33,26 @@ Token *new_token(TokenKind kind, Token *cur, char *str);
 Token *tokenize(char *p);
 
 //
+// type.c
+//
+
+typedef enum {
+    TyInt,
+    TyPtr
+} TypeKind;
+
+typedef struct Type Type;
+
+struct Type {
+    TypeKind kind;
+    Type *ptr_to;
+};
+
+Type *new_type(TypeKind kind);
+Type *new_type_ptr(Type *ty);
+
+
+//
 // parse.c
 //
 
@@ -40,6 +60,7 @@ typedef struct Obj Obj;
 
 struct Obj {
     Obj *next;
+    Type *type;
     char *name;
     int len;
     int offset;
@@ -85,6 +106,7 @@ struct Node {
 
     int val;   // kindがNdNumのとき、その値
     Obj *obj;  // 
+    Type *type;
 };
 
 typedef struct Function Function;
