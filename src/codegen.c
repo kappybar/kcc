@@ -1,6 +1,7 @@
 #include "kcc.h"
 
-void codegen(Node *node);
+void codegen_expr(Node *node);
+void codegen_stmt(Node *node);
 
 void gen_addr(Node *node) {
     char s[100];
@@ -12,7 +13,7 @@ void gen_addr(Node *node) {
         printf("  push rax\n");
         break; 
     case NdDeref:
-        codegen(node->lhs);
+        codegen_expr(node->lhs);
         break;
     default:
         error_codegen(); 
@@ -20,7 +21,65 @@ void gen_addr(Node *node) {
 
 } 
 
-void codegen(Node *node) {
+void codegen_stmt(Node *node) {
+    switch (node->kind) {
+    case NdReturn:
+        codegen_expr(node->lhs);
+        printf("  pop rax # return value \n"); 
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+        return;
+    case NdIf: {
+        int cnt = counter();
+        codegen_expr(node->cond);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lelse%d\n", cnt);
+        codegen_stmt(node->then);
+        printf("  jmp .Lend%d\n", cnt);
+        printf(".Lelse%d:\n", cnt);
+        if (node->els) {
+            codegen_stmt(node->els);
+        }
+        printf(".Lend%d:\n", cnt);
+        return;
+    }
+    case NdFor : {
+        int cnt = counter();
+        if (node->init) {
+            codegen_expr(node->init);
+            printf("  pop rax # init%d\n", cnt);
+        }
+        printf(".Lcond%d:\n", cnt);
+        if (node->cond) {
+            codegen_expr(node->cond);
+            printf("  pop rax # cond%d\n", cnt);
+            printf("  cmp rax, 0\n");
+            printf("  je .Lend%d\n", cnt);
+        }
+        codegen_stmt(node->then);
+        if (node->inc) {
+            codegen_expr(node->inc);
+            printf("  pop rax # inc%d\n", cnt);
+        }
+        printf("  jmp .Lcond%d\n", cnt);
+        printf(".Lend%d:\n", cnt);
+        return;
+    }
+    case NdBlock :
+        for (Node *cur = node->body;cur;cur = cur->next) {
+            codegen_stmt(cur);
+        }
+        return;
+    default :
+        codegen_expr(node);
+        printf("  pop rax # expr -> stmt\n");
+        return;
+    }
+}
+
+void codegen_expr(Node *node) {
     switch (node->kind) {
     case NdNum:
         printf("  push %d\n", node->val);
@@ -33,70 +92,16 @@ void codegen(Node *node) {
         return;
     case NdAssign:
         gen_addr(node->lhs);
-        codegen(node->rhs);
+        codegen_expr(node->rhs);
         printf("  pop rdi # rhs \n"); 
         printf("  pop rax # lhs addr \n"); 
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
         return;
-    case NdReturn:
-        codegen(node->lhs);
-        printf("  pop rax # return value \n"); 
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
-        printf("  ret\n");
-        return;
-    case NdIf: {
-        int cnt = counter();
-        codegen(node->cond);
-        printf("  pop rax\n");
-        printf("  cmp rax, 0\n");
-        printf("  je .Lelse%d\n", cnt);
-        codegen(node->then);
-        printf("  jmp .Lend%d\n", cnt);
-        printf(".Lelse%d:\n", cnt);
-        if (node->els) {
-            codegen(node->els);
-        } else {
-            printf("  push rax # debug\n");
-        }
-        printf(".Lend%d:\n", cnt);
-        return;
-    }
-    case NdFor : {
-        int cnt = counter();
-        if (node->init) {
-            codegen(node->init);
-            printf("  pop rax # init%d\n", cnt);
-        }
-        printf(".Lcond%d:\n", cnt);
-        if (node->cond) {
-            codegen(node->cond);
-            printf("  pop rax # cond%d\n", cnt);
-            printf("  cmp rax, 0\n");
-            printf("  je .Lend%d\n", cnt);
-        }
-        codegen(node->then);
-        printf("  pop rax # then%d\n", cnt);
-        if (node->inc) {
-            codegen(node->inc);
-            printf("  pop rax # inc%d\n", cnt);
-        }
-        printf("  jmp .Lcond%d\n", cnt);
-        printf(".Lend%d:\n", cnt);
-        return;
-    }
-    case NdBlock :
-        for (Node *cur = node->body;cur;cur = cur->next) {
-            codegen(cur);
-            printf("  pop rax\n");
-        }
-        printf("  push rax # Block\n");
-        return;
     case NdDeref:
         // not safe
         // node->lhs type should be pointer type
-        codegen(node->lhs);
+        codegen_expr(node->lhs);
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
         printf("  push rax\n");
@@ -104,12 +109,17 @@ void codegen(Node *node) {
     case NdRef:
         gen_addr(node->lhs);
         return;
+    case NdReturn:
+    case NdBlock:
+    case NdIf:
+    case NdFor:
+        error_codegen();
     default:
         break;
     }
 
-    codegen(node->lhs);
-    codegen(node->rhs);
+    codegen_expr(node->lhs);
+    codegen_expr(node->rhs);
     printf("  pop rdi # rhs \n"); 
     printf("  pop rax # lhs \n"); 
 
@@ -165,8 +175,7 @@ void codegen_function(Function *func) {
     printf("  sub rsp, %d\n", func->stack_size);
 
     for (Node *cur = func->body;cur;cur = cur->next) {
-        codegen(cur);
-        printf("  pop rax\n");
+        codegen_stmt(cur);
     }
 
     // epilogue
