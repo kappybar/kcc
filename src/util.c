@@ -21,3 +21,8 @@ void error_codegen() {
     fprintf(stderr, "codegen error\n");
     exit(1);
 }
+
+void error_type() {
+    fprintf(stderr, "type error\n");
+    exit(1);
+}

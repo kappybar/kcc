@@ -48,7 +48,7 @@ assert 3 "{int x;int *y; x = 3;y = &x; return *y;}"
 assert 3 "{ int x;int *y;int **z; x = 3;y = &x; z = &y; return **z;}"
 assert 10 "{ int x;int *y;int **z; x = 4;y = &x; z = &y; **z = 10; return x;}"
 assert 19 "{ int foo;int bar;int i; foo = 3;bar = 4; for (i = 0;i < 10;i = i + 1) if(i > 5) foo = foo + bar; return foo; }"
-
+assert 3 "{int a;int c; int *b; b = &a; *(b - 1) = 3;return c;}" # これは実装依存なので後でこのテストは消す
 
 
 

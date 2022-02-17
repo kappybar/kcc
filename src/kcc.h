@@ -6,6 +6,13 @@
 #include <stdbool.h>
 #include <string.h>
 
+typedef struct Token Token;
+typedef struct Type Type;
+typedef struct Obj Obj;
+typedef struct Node Node;
+typedef struct Function Function;
+
+
 //
 // tokenize.c
 //
@@ -18,7 +25,6 @@ typedef enum {
     TkEof       // end of file
 } TokenKind;
 
-typedef struct Token Token;
 
 struct Token {
     TokenKind kind;
@@ -41,7 +47,6 @@ typedef enum {
     TyPtr
 } TypeKind;
 
-typedef struct Type Type;
 
 struct Type {
     TypeKind kind;
@@ -50,13 +55,13 @@ struct Type {
 
 Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
-
+int ptr_to_size(Type *ty);
+void add_type(Node *node);
 
 //
 // parse.c
 //
 
-typedef struct Obj Obj;
 
 struct Obj {
     Obj *next;
@@ -88,8 +93,6 @@ typedef enum {
     NdRef      // &
 } NodeKind;
 
-typedef struct Node Node;
-
 struct Node {
     NodeKind kind;
     Node *next;
@@ -109,7 +112,6 @@ struct Node {
     Type *type;
 };
 
-typedef struct Function Function;
 
 struct Function {
     Node *body;
@@ -137,6 +139,7 @@ int counter();
 void error_tokenize(char *p);
 void error_parse(Token *token);
 void error_codegen();
+void error_type();
 
 //
 // debug.c

@@ -175,17 +175,62 @@ Node *mul(Token **token) {
     return node;
 }
 
+Node *new_add(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+    if (lhs->type->kind == TyInt && rhs->type->kind == TyPtr) {
+        Node *tmp = lhs;
+        lhs = rhs;
+        rhs = tmp;
+    }
+    if (lhs->type->kind == TyInt && rhs->type->kind == TyInt) {
+        return new_node(NdAdd, lhs, rhs);
+    }
+    else if (lhs->type->kind == TyPtr && rhs->type->kind == TyInt) {
+        int size = ptr_to_size(lhs->type);
+        rhs = new_node(NdMul, rhs, new_node_num(size));
+        return new_node(NdAdd, lhs , rhs);
+    } 
+    else {
+        error_type();
+        return NULL;
+    }
+}
+
+Node *new_sub(Node *lhs, Node *rhs) {
+    add_type(lhs);
+    add_type(rhs);
+    if (lhs->type->kind == TyInt && rhs->type->kind == TyPtr) {
+        Node *tmp = lhs;
+        lhs = rhs;
+        rhs = tmp;
+    }
+    if (lhs->type->kind == TyInt && rhs->type->kind == TyInt) {
+        return new_node(NdSub, lhs, rhs);
+    }
+    else if (lhs->type->kind == TyPtr && rhs->type->kind == TyInt) {
+        int size = ptr_to_size(lhs->type);
+        rhs = new_node(NdMul, rhs, new_node_num(size));
+        return new_node(NdSub, lhs , rhs);
+    } 
+    else {
+        int size = ptr_to_size(lhs->type);
+        Node *node = new_node(NdSub, lhs, rhs);
+        return new_node(NdDiv, node, new_node_num(size));
+    }
+}
+
 // add = mul ("+" mul | "-" mul) *
 Node *add(Token **token) {
     Node *node = mul(token);
 
     while (1) {
         if (consume(token, "+")) {
-            node = new_node(NdAdd, node, mul(token));
+            node = new_add(node, mul(token));
             continue;
         }
         if (consume(token, "-")) {
-            node = new_node(NdSub, node, mul(token));
+            node = new_sub(node, mul(token));
             continue;
         }
         break;
