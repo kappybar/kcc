@@ -181,6 +181,14 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "Ref\n");
         display_node(node->lhs, indent + 1);
         break;
+    case NdFuncall: {
+        char name[node->func_name_len + 1];
+        strncpy(name, node->func_name, node->func_name_len);
+        name[node->func_name_len] = '\0';
+        fprintf(stderr, "Funcall (name : %s)\n", name);
+        break;
+    }
+        
     default:
         break;
     }
@@ -197,6 +205,13 @@ void display_function(Function *func) {
     for (Node *cur = func->body ;cur; cur = cur->next) {
         display_node(cur, 1);
         fprintf(stderr, "\n");
+    }
+    return;
+}
+
+void display_program(Function *func) {
+    for (Function *fn = func;fn;fn = fn->next) {
+        display_function(fn);
     }
     return;
 }

@@ -111,6 +111,14 @@ void codegen_expr(Node *node) {
     case NdRef:
         gen_addr(node->lhs);
         return;
+    case NdFuncall: {
+        char name[node->func_name_len + 1];
+        strncpy(name, node->func_name, node->func_name_len);
+        name[node->func_name_len] = '\0';
+        printf("  call %s\n", name);
+        printf("  push rax\n");
+        return;
+        }
     case NdReturn:
     case NdBlock:
     case NdIf:
@@ -168,8 +176,11 @@ void codegen_expr(Node *node) {
 }
 
 void codegen_function(Function *func) {
-    printf(".globl main\n");
-    printf("main:\n");
+    char name[func->name_len + 1];
+    strncpy(name, func->name, func->name_len);
+    name[func->name_len] = '\0';
+    printf(".globl %s\n", name);
+    printf("%s:\n", name);
 
     // prologue
     printf("  push rbp\n");
@@ -183,6 +194,13 @@ void codegen_function(Function *func) {
     // epilogue
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
-    printf("  ret\n");
+    printf("  ret\n\n");
+    return;
+}
+
+void codegen(Function *func) {
+    for (Function *fn = func;fn;fn = fn->next) {
+        codegen_function(fn);
+    }
     return;
 }

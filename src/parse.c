@@ -124,7 +124,8 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 }
 
 // primary =   number 
-//           | ident ("[" expr "]") ? only 1-dim array
+//           | ident ( "[" expr "]" ) ? only 1-dim array
+//           | ident ( "(" ")" ) ?  only no argument funcall
 //           | "(" expr ")"
 Node *primary(Token **token) {
     if (consume(token, "(")) {
@@ -134,6 +135,15 @@ Node *primary(Token **token) {
     }
     Token *token_ident = consume_ident(token);
     if (token_ident) {
+        // funccall
+        if (consume(token, "(")) {
+            expect(token, ")");
+            Node *node = new_node(NdFuncall, NULL, NULL);
+            node->func_name = token_ident->str;
+            node->func_name_len = token_ident->len;
+            return node;
+        }
+        // variable
         Obj *obj = find_obj(token_ident, true); // should_exist = false
         Node *node = new_node_lvar(obj);
         add_type(node);
@@ -475,7 +485,7 @@ Function *program(Token **token) {
     Function head;
     Function *cur = &head;
 
-    if (!at_eof(*token)) {
+    while (!at_eof(*token)) {
         cur->next = func_def(token);
         cur = cur->next;
     }

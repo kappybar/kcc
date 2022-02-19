@@ -137,6 +137,10 @@ void add_type(Node *node) {
         add_type(node->then);
         if (node->els) add_type(node->els);
         break;
+    // case NdFuncall:
+    //     // muzukasiiyo
+    default:
+        break;
     }
     return;
 }

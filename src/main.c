@@ -16,11 +16,11 @@ int main(int argc,char *argv[]) {
     Function *func = parse(&token);
     // for debug
     fprintf(stderr, "parse finish\n");
-    display_function(func);
+    display_program(func);
 
     // codegen
     printf(".intel_syntax noprefix\n");
-    codegen_function(func);
+    codegen(func);
     
     return 0;
 }
