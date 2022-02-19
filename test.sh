@@ -58,4 +58,5 @@ assert 3 "{int a[10]; *(a + 1) = 3; return *(a + 1);}"
 assert 4 "{int a[2];*a = 1;*(a + 1) = 3;int *p;p = a; return *p + *(p+1);}"
 assert 3 "{int a[2];int *b;b = &a; *(b+2) = 3; return *(a+2);}"
 assert 10 "{int *a[4];int *b;int c;b = &c; *(a + 3) = b; *b = 10; return **(a + 3);  }"
-
+assert 3 "{int a[3]; a[0] = 3; return a[0];}"
+assert 55 "{int foo[10];int i; for(i = 0;i < 10;i = i + 1) {foo[i] = i + 1;} int sum;sum = 0; for (i = 0;i < 10; i = i+ 1) sum = sum + foo[i]; return sum;}"

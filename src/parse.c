@@ -5,6 +5,7 @@ Obj *locals;
 Node *primary(Token **token);
 Node *unary(Token **token);
 Node *add(Token **token);
+Node *new_add(Node *lhs, Node *rhs);
 Node *mul(Token **token);
 Node *relational (Token **token);
 Node *assign(Token **token);
@@ -122,7 +123,9 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
-// primary = number | ident | "(" expr ")"
+// primary =   number 
+//           | ident ("[" expr "]") ? only 1-dim array
+//           | "(" expr ")"
 Node *primary(Token **token) {
     if (consume(token, "(")) {
         Node *node = expr(token);
@@ -134,6 +137,12 @@ Node *primary(Token **token) {
         Obj *obj = find_obj(token_ident, true); // should_exist = false
         Node *node = new_node_lvar(obj);
         add_type(node);
+        if (consume(token, "[")) {
+            Node *index = expr(token);
+            node = new_add(node, index);
+            node = new_node(NdDeref, node, NULL);
+            expect(token, "]");
+        }
         return node;
     }
     int val = expect_number(token);
@@ -318,7 +327,7 @@ Type *declspec(Token **token) {
 }
 
 // direct_decl =   ident
-//               | ident "[" number "]" // I implement only number array temporaly
+//               | ident "[" number "]" // I implement only number array temporaly, 1-dim array
 Node *direct_decl(Token **token, Type *type) {
     Token *token_ident = expect_ident(token);
     find_obj(token_ident, false); // should_exist = false
