@@ -31,22 +31,27 @@ void display_token(Token *token) {
 void display_type(Type *type) {
     int cnt = 0;
     Type *ty;
-    for (ty = type; ty->kind == TyPtr; ty = ty->ptr_to) {
-        cnt ++;
-    } 
     char s[100];
-    int width;
-    switch (ty->kind) {
-    case TyInt:
-        width = 3;
-        strncpy(s, "int", width);
-        break;
-    default:
-        break;
-    }
-    s[width] = ' ';
-    for (int i = 0;i < cnt; i++) s[i + width + 1] = '*';
-    s[cnt + width + 1] = '\0';
+    int width = 0;
+    for (ty = type;ty; ty = ty->ptr_to) {
+        switch (ty->kind) {
+        case TyInt:
+            strncpy(s + width, "int", 3);
+            width += 3;
+            break;
+        case TyArray:
+            strncpy(s + width, "array of ", 9);
+            width += 9;
+            break;
+        case TyPtr:
+            strncpy(s + width, "ptr of ", 7);
+            width += 7;
+            break;
+        default:
+            break;
+        }
+    } 
+    s[width] = '\0';
     fprintf(stderr, "type : %s", s);
     return;
 }

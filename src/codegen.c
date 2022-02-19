@@ -85,10 +85,14 @@ void codegen_expr(Node *node) {
         printf("  push %d\n", node->val);
         return;
     case NdLvar:
-        gen_addr(node);
-        printf("  pop rax\n");
-        printf("  mov rax, [rax]\n");
-        printf("  push rax\n");
+        if (node->type->kind == TyArray) {
+            gen_addr(node);
+        } else {
+            gen_addr(node);
+            printf("  pop rax\n");
+            printf("  mov rax, [rax]\n");
+            printf("  push rax\n");
+        }
         return;
     case NdAssign:
         gen_addr(node->lhs);
@@ -99,8 +103,6 @@ void codegen_expr(Node *node) {
         printf("  push rdi\n");
         return;
     case NdDeref:
-        // not safe
-        // node->lhs type should be pointer type
         codegen_expr(node->lhs);
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");

@@ -101,17 +101,16 @@ Obj *new_obj(Token *token, Type *type) {
     obj->next = locals;
     obj->len = token->len;
     obj->name = token->str;
-    obj->offset = locals ? locals->offset + 8 : 0;
     obj->type = type;
     locals = obj;
     return obj;
 }
  
-Node *new_node_lvar(Token *token, Obj *obj) {
+Node *new_node_lvar(Obj *obj) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = NdLvar;
     node->obj = obj;
-    node->type = obj->type;
+    node->type = copy_type(obj->type);
     return node;
 }
 
@@ -133,7 +132,8 @@ Node *primary(Token **token) {
     Token *token_ident = consume_ident(token);
     if (token_ident) {
         Obj *obj = find_obj(token_ident, true); // should_exist = false
-        Node *node = new_node_lvar(token_ident, obj);
+        Node *node = new_node_lvar(obj);
+        add_type(node);
         return node;
     }
     int val = expect_number(token);
@@ -186,7 +186,8 @@ Node *mul(Token **token) {
 Node *new_add(Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
-    if (lhs->type->kind == TyInt && rhs->type->kind == TyPtr) {
+
+    if (lhs->type->kind == TyInt && (rhs->type->kind == TyPtr || rhs->type->kind == TyArray) ) {
         Node *tmp = lhs;
         lhs = rhs;
         rhs = tmp;
@@ -194,7 +195,7 @@ Node *new_add(Node *lhs, Node *rhs) {
     if (lhs->type->kind == TyInt && rhs->type->kind == TyInt) {
         return new_node(NdAdd, lhs, rhs);
     }
-    else if (lhs->type->kind == TyPtr && rhs->type->kind == TyInt) {
+    else if ( (lhs->type->kind == TyPtr || lhs->type->kind == TyArray) && rhs->type->kind == TyInt) {
         int size = ptr_to_size(lhs->type);
         rhs = new_node(NdMul, rhs, new_node_num(size));
         return new_node(NdAdd, lhs , rhs);
@@ -208,7 +209,8 @@ Node *new_add(Node *lhs, Node *rhs) {
 Node *new_sub(Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
-    if (lhs->type->kind == TyInt && rhs->type->kind == TyPtr) {
+
+    if (lhs->type->kind == TyInt && (rhs->type->kind == TyPtr || rhs->type->kind == TyArray)) {
         Node *tmp = lhs;
         lhs = rhs;
         rhs = tmp;
@@ -216,7 +218,7 @@ Node *new_sub(Node *lhs, Node *rhs) {
     if (lhs->type->kind == TyInt && rhs->type->kind == TyInt) {
         return new_node(NdSub, lhs, rhs);
     }
-    else if (lhs->type->kind == TyPtr && rhs->type->kind == TyInt) {
+    else if ((lhs->type->kind == TyPtr || lhs->type->kind == TyArray) && rhs->type->kind == TyInt) {
         int size = ptr_to_size(lhs->type);
         rhs = new_node(NdMul, rhs, new_node_num(size));
         return new_node(NdSub, lhs , rhs);
@@ -315,16 +317,29 @@ Type *declspec(Token **token) {
     return new_type(TyInt);
 }
 
-// declaration = declspec "*"* ident ";"
+// direct_decl =   ident
+//               | ident "[" number "]" // I implement only number array temporaly
+Node *direct_decl(Token **token, Type *type) {
+    Token *token_ident = expect_ident(token);
+    find_obj(token_ident, false); // should_exist = false
+    if (consume(token, "[")) {
+        int size = expect_number(token);
+        expect(token, "]");
+        Obj *obj = new_obj(token_ident, new_type_array(type, size));
+        return new_node_lvar(obj);
+    } else {
+        Obj *obj = new_obj(token_ident, type);
+        return new_node_lvar(obj);
+    }
+}
+
+// declaration = declspec "*"* direct_decl ";"
 Node *declaration(Token **token) {
     Type *type = declspec(token);
     while (consume(token, "*")) {
         type = new_type_ptr(type);
     }
-    Token *token_ident = expect_ident(token);
-    find_obj(token_ident, false); // should_exist = false
-    Obj *obj = new_obj(token_ident, type);
-    Node *node = new_node_lvar(token_ident, obj);
+    Node *node = direct_decl(token, type);
     expect(token, ";");
     return node;
 }
@@ -411,6 +426,17 @@ Node *compound_stmt(Token **token) {
     return head.next;
 }
 
+void allocate_stack_offset(Function *func) {
+    int stack_size = 0;
+    for (Obj *obj = func->locals;obj;obj = obj->next) {
+        int size = sizeof_type(obj->type);
+        stack_size += size;
+        obj->offset = stack_size;
+    }
+    func->stack_size = ((stack_size + 15) / 16) * 16;
+    return;
+}
+
 // program = "{" compound_stmt
 Function *program(Token **token) {
     expect(token, "{");
@@ -424,10 +450,12 @@ Function *program(Token **token) {
     Function *func = calloc(1, sizeof(Function));
     func->body = node;
     func->locals = locals;
-    func->stack_size = locals ? locals->offset + 8 : 0;
+    allocate_stack_offset(func);
     locals = NULL;
     return func;
 }
+
+
 
 Function *parse(Token **token) {
     return program(token);

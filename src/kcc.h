@@ -44,17 +44,22 @@ Token *tokenize(char *p);
 
 typedef enum {
     TyInt,
-    TyPtr
+    TyPtr,
+    TyArray,
 } TypeKind;
 
 
 struct Type {
     TypeKind kind;
     Type *ptr_to;
+
+    size_t array_size;
 };
 
 Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
+Type *new_type_array(Type *ty, size_t size);
+Type *copy_type(Type *ty);
 int sizeof_type(Type *ty);
 int ptr_to_size(Type *ty);
 void add_type(Node *node);

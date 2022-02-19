@@ -48,12 +48,14 @@ assert 3 "{int x;int *y; x = 3;y = &x; return *y;}"
 assert 3 "{ int x;int *y;int **z; x = 3;y = &x; z = &y; return **z;}"
 assert 10 "{ int x;int *y;int **z; x = 4;y = &x; z = &y; **z = 10; return x;}"
 assert 19 "{ int foo;int bar;int i; foo = 3;bar = 4; for (i = 0;i < 10;i = i + 1) if(i > 5) foo = foo + bar; return foo; }"
-assert 3 "{int a;int c; int *b; b = &a; *(b - 1) = 3;return c;}" # これは実装依存なので後でこのテストは消す
 assert 8 "{int a;int b;a = sizeof b; return a;}"
 assert 8 "{int a;int b;a = sizeof (b); return a;}"
 assert 8 "{int a;int *b;a = sizeof (b); return a;}"
 assert 8 "{int a; a = sizeof sizeof sizeof a; return a;}"
 assert 8 "{int a; a = sizeof(sizeof(a)); return a;}"
-
-
+assert 80 "{int a[10];int b; b = sizeof(a); return b;}"
+assert 3 "{int a[10]; *(a + 1) = 3; return *(a + 1);}"
+assert 4 "{int a[2];*a = 1;*(a + 1) = 3;int *p;p = a; return *p + *(p+1);}"
+assert 3 "{int a[2];int *b;b = &a; *(b+2) = 3; return *(a+2);}"
+assert 10 "{int *a[4];int *b;int c;b = &c; *(a + 3) = b; *b = 10; return **(a + 3);  }"
 

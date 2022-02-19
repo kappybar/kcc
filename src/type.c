@@ -13,17 +13,35 @@ Type *new_type_ptr(Type *ty) {
     return type;
 }
 
+Type *new_type_array(Type *ty, size_t size) {
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = TyArray;
+    type->ptr_to = ty;
+    type->array_size = size;
+    return type;
+}
+
+Type *copy_type(Type *ty) {
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = ty->kind;
+    type->ptr_to = ty->ptr_to ? copy_type(ty->ptr_to) : NULL;
+    type->array_size = ty->array_size;
+    return type;
+}
+
 int sizeof_type(Type *ty) {
     switch (ty->kind) {
     case TyInt:
         return 8;
     case TyPtr:
         return 8;
+    case TyArray:
+        return ty->array_size * sizeof_type(ty->ptr_to);
     }
 }
 
 int ptr_to_size(Type *ty) {
-    if (ty->kind == TyPtr) {
+    if (ty->ptr_to) {
         return sizeof_type(ty->ptr_to);
     } else {
         error_type();
@@ -32,7 +50,7 @@ int ptr_to_size(Type *ty) {
 }
 
 void add_type(Node *node) {
-    if (node->type) {
+    if (!node && node->type) {
         return;
     }
 
@@ -52,11 +70,11 @@ void add_type(Node *node) {
             if (node->rhs->type->kind == TyInt) {
                 node->type = new_type(TyInt);
             } else {
-                node->type = new_type(TyPtr);
+                node->type = new_type_ptr(node->rhs->type->ptr_to);
             }
         } else {
             if (node->rhs->type->kind == TyInt) {
-                node->type = new_type(TyPtr);
+                node->type = new_type_ptr(node->lhs->type->ptr_to);
             } else {
                 error_type();
             }
@@ -97,10 +115,27 @@ void add_type(Node *node) {
         node->type = node->lhs->type->ptr_to;
         break;
     case NdRef:
-        add_type(node->rhs);
+        add_type(node->lhs);
         node->type = new_type_ptr(node->lhs->type);
         break;
-    default:
+    case NdBlock:
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            add_type(nd);
+        }
+        break;
+    case NdFor:
+        add_type(node->cond);
+        add_type(node->then);
+        add_type(node->init);
+        add_type(node->inc);
+        break;
+    case NdReturn:
+        add_type(node->lhs);
+        break;
+    case NdIf:
+        add_type(node->cond);
+        add_type(node->then);
+        if (node->els) add_type(node->els);
         break;
     }
     return;
