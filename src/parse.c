@@ -140,8 +140,8 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// unary =  ("+" | "-") ? primary
-//        | ("*" | "&") unary
+// unary =   ("+" | "-") ? primary
+//         | ("*" | "&") unary
 //         | "sizeof" unary
 Node *unary(Token **token) {
     if (consume(token, "+")) {
