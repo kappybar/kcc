@@ -13,14 +13,18 @@ Type *new_type_ptr(Type *ty) {
     return type;
 }
 
+int sizeof_type(Type *ty) {
+    switch (ty->kind) {
+    case TyInt:
+        return 8;
+    case TyPtr:
+        return 8;
+    }
+}
+
 int ptr_to_size(Type *ty) {
     if (ty->kind == TyPtr) {
-        switch (ty->ptr_to->kind) {
-        case TyInt :
-            return 8;
-        case TyPtr :
-            return 8;    
-        }
+        return sizeof_type(ty->ptr_to);
     } else {
         error_type();
         return 0;

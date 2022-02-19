@@ -55,6 +55,7 @@ struct Type {
 
 Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
+int sizeof_type(Type *ty);
 int ptr_to_size(Type *ty);
 void add_type(Node *node);
 

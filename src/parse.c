@@ -142,6 +142,7 @@ Node *primary(Token **token) {
 
 // unary =  ("+" | "-") ? primary
 //        | ("*" | "&") unary
+//         | "sizeof" unary
 Node *unary(Token **token) {
     if (consume(token, "+")) {
         return primary(token);
@@ -151,6 +152,13 @@ Node *unary(Token **token) {
         return new_node(NdDeref, unary(token), NULL);
     } else if (consume(token, "&")) {
         return new_node(NdRef, unary(token), NULL);
+    } else if (consume_keyword(token, "sizeof")) {
+        Node *node = unary(token);
+        add_type(node);
+        if (!node->type) {
+            error_parse(*token);
+        }
+        return new_node_num(sizeof_type(node->type));
     } else {
         return primary(token);
     }
