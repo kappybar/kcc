@@ -188,8 +188,14 @@ void display_node(Node *node, int indent) {
 }
 
 void display_function(Function *func) {
+    char s[100];
+    strncpy(s, func->name, func->name_len);
+    s[func->name_len] = '\0';
+    fprintf(stderr, "Function : (name : %s, return ", s);
+    display_type(func->return_type);
+    fprintf(stderr, ")\n");
     for (Node *cur = func->body ;cur; cur = cur->next) {
-        display_node(cur, 0);
+        display_node(cur, 1);
         fprintf(stderr, "\n");
     }
     return;

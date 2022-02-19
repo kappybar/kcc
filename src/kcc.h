@@ -120,8 +120,13 @@ struct Node {
 
 
 struct Function {
+    Function *next;
     Node *body;
     Obj *locals;
+    Type *return_type;
+
+    char *name;
+    int name_len;
     int stack_size;
 };
 

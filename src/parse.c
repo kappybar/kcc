@@ -446,22 +446,41 @@ void allocate_stack_offset(Function *func) {
     return;
 }
 
-// program = "{" compound_stmt
-Function *program(Token **token) {
-    expect(token, "{");
-
-    Node *node = compound_stmt(token);
-    if (!at_eof(*token)) {
-        printf("err");
-        error_parse(*token);
+// func_def = declspec "*"* ident "(" ")"  "{" compound_stmt
+// no argument function
+Function *func_def(Token **token) {
+    Type *type = declspec(token);
+    while(consume(token, "*")) {
+        type = new_type_ptr(type);
     }
+    Token *token_ident = expect_ident(token);
+    expect(token, "(");
+    expect(token, ")");
+    expect(token, "{");
+    Node *node = compound_stmt(token);
 
     Function *func = calloc(1, sizeof(Function));
+    func->return_type = type;
     func->body = node;
     func->locals = locals;
+    func->name = token_ident->str;
+    func->name_len = token_ident->len;
     allocate_stack_offset(func);
     locals = NULL;
     return func;
+}
+
+// program = func_def *
+Function *program(Token **token) {
+    Function head;
+    Function *cur = &head;
+
+    if (!at_eof(*token)) {
+        cur->next = func_def(token);
+        cur = cur->next;
+    }
+
+    return head.next;
 }
 
 
