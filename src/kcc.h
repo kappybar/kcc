@@ -5,6 +5,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdarg.h>
+#include <assert.h>
 
 typedef struct Token Token;
 typedef struct Type Type;
@@ -154,6 +156,7 @@ void codegen(Function *func);
 //
 
 int counter();
+int align_to(int x, int align);
 void error_tokenize(char *p);
 void error_parse(Token *token);
 void error_codegen();

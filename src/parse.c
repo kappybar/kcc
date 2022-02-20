@@ -193,7 +193,6 @@ Node *primary(Token **token) {
 // postfix = primary ( "[" expr "]" | "(" argument ")" )*
 Node *postfix(Token **token) {
     Node *node = primary(token);
-    fprintf(stderr, "%s\n", (*token)->str);
     while (1) {
         if (consume(token, "[")) {
             Node *index = expr(token);
@@ -538,7 +537,7 @@ void allocate_stack_offset(Function *func) {
         stack_size += size;
         obj->offset = stack_size;
     }
-    func->stack_size = ((stack_size + 15) / 16) * 16;
+    func->stack_size = align_to(stack_size, 16);
     return;
 }
 

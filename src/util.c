@@ -5,6 +5,10 @@ int counter() {
     return count++;
 }
 
+int align_to(int x, int align) {
+    return ((x + align - 1) / align) * align;
+}
+
 void error_tokenize(char *p) {
     fprintf(stderr, "%s\n", p);
     fprintf(stderr, "^ tokenize error\n");
