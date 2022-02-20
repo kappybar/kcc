@@ -29,6 +29,16 @@ Type *copy_type(Type *ty) {
     return type;
 }
 
+Type *find_return_type(char *func_name, int func_name_len) {
+    for (Function *fn = functions;fn;fn = fn->next) {
+        if (fn->name_len == func_name_len && strncmp(func_name, fn->name, func_name_len) == 0) {
+            return fn->return_type;
+        }
+    }
+    error_type();
+    return NULL;
+}
+
 int sizeof_type(Type *ty) {
     switch (ty->kind) {
     case TyInt:
@@ -138,9 +148,7 @@ void add_type(Node *node) {
         if (node->els) add_type(node->els);
         break;
     case NdFuncall:
-        // muzukasi
-        // temporary solution
-        node->type = new_type(TyInt); 
+        node->type = find_return_type(node->func_name, node->func_name_len); 
         break;
     default:
         break;

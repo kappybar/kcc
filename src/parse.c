@@ -1,6 +1,7 @@
 #include "kcc.h"
 
 Obj *locals;
+Function *functions;
 
 Node *primary(Token **token);
 Node *unary(Token **token);
@@ -149,9 +150,10 @@ Node *argument(Token **token) {
 }
 
 // primary =   number 
-//           | ident ( "[" expr "]" ) ? only 1-dim array
-//           | ident ( "(" argument ")" ) ?  only no argument funcall
 //           | "(" expr ")"
+//           | ident "(" argument ")"
+//           | ident "[" expr "]"
+//           | ident 
 Node *primary(Token **token) {
     if (consume(token, "(")) {
         Node *node = expr(token);
@@ -188,14 +190,39 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// unary =   ("+" | "-") ? primary
+// postfix = primary ( "[" expr "]" | "(" argument ")" )*
+Node *postfix(Token **token) {
+    Node *node = primary(token);
+    fprintf(stderr, "%s\n", (*token)->str);
+    while (1) {
+        if (consume(token, "[")) {
+            Node *index = expr(token);
+            node = new_add(node, index);
+            node = new_node(NdDeref, node, NULL);
+            expect(token, "]");
+            continue;
+        }
+        if (consume(token, "(")) {
+            error_parse(*token);
+            // function pointer is not supported now
+            continue;
+        }
+
+        break;
+    }
+
+    return node;
+}
+
+// unary =   ("+" | "-") unary
 //         | ("*" | "&") unary
 //         | "sizeof" unary
+//         | postfix
 Node *unary(Token **token) {
     if (consume(token, "+")) {
-        return primary(token);
+        return unary(token);
     } else if (consume(token, "-")) {
-        return new_node(NdSub, new_node_num(0), primary(token));
+        return new_node(NdSub, new_node_num(0), unary(token));
     } else if (consume(token, "*")) {
         return new_node(NdDeref, unary(token), NULL);
     } else if (consume(token, "&")) {
@@ -208,7 +235,7 @@ Node *unary(Token **token) {
         }
         return new_node_num(sizeof_type(node->type));
     } else {
-        return primary(token);
+        return postfix(token);
     }
 }
 
@@ -516,7 +543,7 @@ void allocate_stack_offset(Function *func) {
 }
 
 // func_def = declspec "*"* ident "(" param ")"  "{" compound_stmt
-Function *func_def(Token **token) {
+void func_def(Token **token) {
     Function *func = calloc(1, sizeof(Function));
 
     func->return_type = declspec(token);
@@ -525,35 +552,38 @@ Function *func_def(Token **token) {
     }
     Token *token_ident = expect_ident(token);
     
+    // param
     expect(token, "(");
     if (!consume(token, ")")) {
         func->args = param(token);
         expect(token, ")");
     }
 
+    // set function
+    func->next = functions;
+    functions = func;
+    func->name = token_ident->str;
+    func->name_len = token_ident->len;
+
+    // body
     expect(token, "{");
     Node *node = compound_stmt(token);
 
     func->body = node;
     func->locals = locals;
-    func->name = token_ident->str;
-    func->name_len = token_ident->len;
     allocate_stack_offset(func);
     locals = NULL;
-    return func;
+    return;
 }
 
 // program = func_def *
 Function *program(Token **token) {
-    Function head;
-    Function *cur = &head;
 
     while (!at_eof(*token)) {
-        cur->next = func_def(token);
-        cur = cur->next;
+        func_def(token);
     }
 
-    return head.next;
+    return functions;
 }
 
 

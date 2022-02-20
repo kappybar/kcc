@@ -123,6 +123,7 @@ struct Node {
     Node *arguments;
 };
 
+extern Function *functions;
 
 struct Function {
     Function *next;
