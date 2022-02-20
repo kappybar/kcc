@@ -120,6 +120,7 @@ struct Node {
 
     char *func_name;
     int func_name_len;
+    Node *arguments;
 };
 
 
@@ -127,6 +128,7 @@ struct Function {
     Function *next;
     Node *body;
     Obj *locals;
+    Obj *args;
     Type *return_type;
 
     char *name;

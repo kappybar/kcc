@@ -3,6 +3,8 @@
 void codegen_expr(Node *node);
 void codegen_stmt(Node *node);
 
+const char *args_reg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
 void gen_addr(Node *node) {
     char s[100];
     switch (node->kind) {
@@ -112,6 +114,14 @@ void codegen_expr(Node *node) {
         gen_addr(node->lhs);
         return;
     case NdFuncall: {
+        int num_of_arg = 0;
+        for (Node *nd = node->arguments;nd;nd = nd->next) {
+            ++num_of_arg;
+            codegen_expr(nd);
+        }
+        for (int i = num_of_arg - 1;i >= 0; i--) {
+            printf("  pop %s\n", args_reg[i]);
+        }
         char name[node->func_name_len + 1];
         strncpy(name, node->func_name, node->func_name_len);
         name[node->func_name_len] = '\0';
@@ -186,6 +196,12 @@ void codegen_function(Function *func) {
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
     printf("  sub rsp, %d\n", func->stack_size);
+    
+    int i = 0;
+    for (Obj *arg = func->args;arg;arg = arg->next) {
+        printf("  lea rax, [rbp%+d]\n", -arg->offset);
+        printf("  mov [rax], %s\n", args_reg[i++]);
+    }
 
     for (Node *cur = func->body;cur;cur = cur->next) {
         codegen_stmt(cur);

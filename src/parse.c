@@ -97,6 +97,18 @@ Obj *find_obj(Token *token, bool should_exist) {
     return NULL;
 }
 
+void locals_reverse(void) {
+    Obj *next = NULL;
+    Obj *temp = NULL;
+    for (Obj *obj = locals;obj;obj = temp) {
+        temp = obj->next;
+        obj->next = next;
+        next = obj;
+    }
+    locals = next;
+    return;
+}
+
 Obj *new_obj(Token *token, Type *type) {
     Obj *obj = calloc(1, sizeof(Obj));
     obj->next = locals;
@@ -123,9 +135,22 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
+// argument = expr ("," expr) *
+Node *argument(Token **token) {
+    Node head;
+    Node *cur = &head;
+    cur->next = expr(token);
+    cur = cur->next;
+    while(consume(token, ",")) {
+        cur->next = expr(token);
+        cur = cur->next;
+    }
+    return head.next;
+}
+
 // primary =   number 
 //           | ident ( "[" expr "]" ) ? only 1-dim array
-//           | ident ( "(" ")" ) ?  only no argument funcall
+//           | ident ( "(" argument ")" ) ?  only no argument funcall
 //           | "(" expr ")"
 Node *primary(Token **token) {
     if (consume(token, "(")) {
@@ -137,10 +162,14 @@ Node *primary(Token **token) {
     if (token_ident) {
         // funccall
         if (consume(token, "(")) {
-            expect(token, ")");
             Node *node = new_node(NdFuncall, NULL, NULL);
             node->func_name = token_ident->str;
             node->func_name_len = token_ident->len;
+            if (consume(token, ")")) {
+                return node;
+            }
+            node->arguments = argument(token);
+            expect(token, ")");
             return node;
         }
         // variable
@@ -183,10 +212,9 @@ Node *unary(Token **token) {
     }
 }
 
-// mul = primary ("*" unary | "/" unary) *
+// mul = unary ("*" unary | "/" unary) *
 Node *mul(Token **token) {
     Node *node = unary(token);
-
     while (1) {
         if (consume(token, "*")) {
             node = new_node(NdMul, node, unary(token));
@@ -338,17 +366,18 @@ Type *declspec(Token **token) {
 
 // direct_decl =   ident
 //               | ident "[" number "]" // I implement only number array temporaly, 1-dim array
-Node *direct_decl(Token **token, Type *type) {
+Obj *direct_decl(Token **token, Type *type) {
     Token *token_ident = expect_ident(token);
     find_obj(token_ident, false); // should_exist = false
+
     if (consume(token, "[")) {
         int size = expect_number(token);
         expect(token, "]");
         Obj *obj = new_obj(token_ident, new_type_array(type, size));
-        return new_node_lvar(obj);
+        return obj;
     } else {
         Obj *obj = new_obj(token_ident, type);
-        return new_node_lvar(obj);
+        return obj;
     }
 }
 
@@ -358,7 +387,7 @@ Node *declaration(Token **token) {
     while (consume(token, "*")) {
         type = new_type_ptr(type);
     }
-    Node *node = direct_decl(token, type);
+    Node *node = new_node_lvar( direct_decl(token, type) );
     expect(token, ";");
     return node;
 }
@@ -423,6 +452,7 @@ Node *stmt(Token **token) {
     }
     Node *node = expr(token);
     expect(token, ";");
+
     return node;
 }
 
@@ -445,6 +475,35 @@ Node *compound_stmt(Token **token) {
     return head.next;
 }
 
+// decl = declspec "*"* direct_decl
+Obj *decl(Token **token) {
+    Type *type = declspec(token);
+    while(consume(token, "*")) {
+        type = new_type_ptr(type);
+    }
+    return direct_decl(token, type);
+}
+
+// param = decl ("," decl) * 
+Obj *param(Token **token) {
+    decl(token);
+
+    while (consume(token, ",")) {
+        decl(token);
+    }
+
+    for (Obj *arg = locals;arg;arg = arg->next) {
+        // implicit array to ptr type coversion
+        if (arg->type->kind == TyArray) {
+            arg->type->kind = TyPtr;
+        }
+    }
+
+    locals_reverse();
+
+    return locals;
+}
+
 void allocate_stack_offset(Function *func) {
     int stack_size = 0;
     for (Obj *obj = func->locals;obj;obj = obj->next) {
@@ -456,21 +515,25 @@ void allocate_stack_offset(Function *func) {
     return;
 }
 
-// func_def = declspec "*"* ident "(" ")"  "{" compound_stmt
-// no argument function
+// func_def = declspec "*"* ident "(" param ")"  "{" compound_stmt
 Function *func_def(Token **token) {
-    Type *type = declspec(token);
+    Function *func = calloc(1, sizeof(Function));
+
+    func->return_type = declspec(token);
     while(consume(token, "*")) {
-        type = new_type_ptr(type);
+        func->return_type = new_type_ptr(func->return_type);
     }
     Token *token_ident = expect_ident(token);
+    
     expect(token, "(");
-    expect(token, ")");
+    if (!consume(token, ")")) {
+        func->args = param(token);
+        expect(token, ")");
+    }
+
     expect(token, "{");
     Node *node = compound_stmt(token);
 
-    Function *func = calloc(1, sizeof(Function));
-    func->return_type = type;
     func->body = node;
     func->locals = locals;
     func->name = token_ident->str;

@@ -59,7 +59,10 @@ Token *tokenize(char *p) {
     Token *cur = &head;
 
     while (*p) {
-        while (isspace(*p)) p++;
+        if (isspace(*p)) {
+            p++;
+            continue;
+        }
         
         // num
         if (isdigit(*p)) {

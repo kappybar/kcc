@@ -137,8 +137,11 @@ void add_type(Node *node) {
         add_type(node->then);
         if (node->els) add_type(node->els);
         break;
-    // case NdFuncall:
-    //     // muzukasiiyo
+    case NdFuncall:
+        // muzukasi
+        // temporary solution
+        node->type = new_type(TyInt); 
+        break;
     default:
         break;
     }
