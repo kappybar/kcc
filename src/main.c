@@ -9,14 +9,14 @@ int main(int argc,char *argv[]) {
     // tokenize
     Token *token = tokenize(argv[1]);
     // for debug
-    // fprintf(stderr, "tokenize finish \n");
-    // display_token(token);
+    fprintf(stderr, "tokenize finish \n");
+    display_token(token);
 
     // parse
     Function *func = parse(&token);
     // for debug
-    // fprintf(stderr, "parse finish\n");
-    // display_program(func);
+    fprintf(stderr, "parse finish\n");
+    display_program(func);
 
     // codegen
     printf(".intel_syntax noprefix\n");

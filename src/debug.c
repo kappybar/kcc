@@ -29,6 +29,7 @@ void display_token(Token *token) {
 }
 
 void display_type(Type *type) {
+    if (!type) return;
     int cnt = 0;
     Type *ty;
     char s[100];
@@ -52,7 +53,7 @@ void display_type(Type *type) {
         }
     } 
     s[width] = '\0';
-    fprintf(stderr, "type : %s", s);
+    fprintf(stderr, " { type : %s }", s);
     return;
 }
 
@@ -60,7 +61,7 @@ void display_obj(Obj *obj) {
     char s[obj->len + 1];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
-    fprintf(stderr, "(%s, offset : %d, ", s, obj->offset);
+    fprintf(stderr, "(%s, offset : %d,", s, obj->offset);
     display_type(obj->type);
     fprintf(stderr, ")");
     return;
@@ -84,37 +85,55 @@ void display_child(Node *node, int indent) {
 
 void display_node(Node *node, int indent) {
     display_space(indent);
+    // display_type(node->type);
+    // fprintf(stderr, "\n");
+    // display_space(indent);
     switch (node->kind) {
     case NdNum:
-        fprintf(stderr, "Num : %d\n", node->val);
+        fprintf(stderr, "Num : %d", node->val);
+        display_type(node->type);
+        fprintf(stderr, "\n");
         break;
     case NdLvar:
         fprintf(stderr, "Lvar : ");
         display_obj(node->obj);
+        display_type(node->type);
         fprintf(stderr, "\n");
         break;
     case NdAdd:
-        fprintf(stderr, "Add\n");
+        fprintf(stderr, "Add");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdSub:
-        fprintf(stderr, "Sub\n");
+        fprintf(stderr, "Sub");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdMul:
-        fprintf(stderr, "Mul\n");
+        fprintf(stderr, "Mul");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdDiv:
-        fprintf(stderr, "Div\n");
+        fprintf(stderr, "Div");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdEq:
-        fprintf(stderr, "Eq\n");
+        fprintf(stderr, "Eq");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdNeq:
-        fprintf(stderr, "Neq\n");
+        fprintf(stderr, "Neq");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdLe:
@@ -122,19 +141,27 @@ void display_node(Node *node, int indent) {
         display_child(node, indent);
         break;
     case NdLt:
-        fprintf(stderr, "Lt\n");
+        fprintf(stderr, "Lt");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdAssign:
-        fprintf(stderr, "Assign\n");
+        fprintf(stderr, "Assign");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdReturn:
-        fprintf(stderr, "Return\n");
+        fprintf(stderr, "Return");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_node(node->lhs, indent + 1);
         break;  
     case NdIf:
-        fprintf(stderr, "If\n");
+        fprintf(stderr, "If");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_node(node->cond, indent + 1);
         display_space(indent);
         fprintf(stderr, "Then\n");
@@ -146,7 +173,9 @@ void display_node(Node *node, int indent) {
         }
         break;  
     case NdFor:
-        fprintf(stderr, "For\n");
+        fprintf(stderr, "For");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         if (node->init) {
             display_space(indent);
             fprintf(stderr, "Init\n");
@@ -167,36 +196,42 @@ void display_node(Node *node, int indent) {
         display_node(node->then, indent + 1);
         break; 
     case NdBlock:
-        fprintf(stderr, "Block\n");
+        fprintf(stderr, "Block");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         for (Node *cur = node->body;cur;cur = cur->next) {
             display_node(cur, indent + 1);
             fprintf(stderr, "\n");
         }
         break;
     case NdDeref:
-        fprintf(stderr, "Deref\n");
+        fprintf(stderr, "Deref");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_node(node->lhs, indent + 1);
         break;
     case NdRef:
         fprintf(stderr, "Ref\n");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_node(node->lhs, indent + 1);
         break;
     case NdFuncall: {
         char name[node->func_name_len + 1];
         strncpy(name, node->func_name, node->func_name_len);
         name[node->func_name_len] = '\0';
-        fprintf(stderr, "Funcall (name : %s)\n", name);
+        fprintf(stderr, "Funcall (name : %s)", name);
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_space(indent + 1);
         fprintf(stderr, "Args\n");
         for (Node *nd = node->arguments;nd;nd = nd->next) {
             display_node(nd, indent + 2);
         }
         break;
+        }
     }
-        
-    default:
-        break;
-    }
+    
     return;
 }
 

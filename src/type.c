@@ -35,7 +35,7 @@ Type *find_return_type(char *func_name, int func_name_len) {
             return fn->return_type;
         }
     }
-    error_type();
+    error_type("implicit declaraton of function\n");
     return NULL;
 }
 
@@ -54,13 +54,19 @@ int ptr_to_size(Type *ty) {
     if (ty->ptr_to) {
         return sizeof_type(ty->ptr_to);
     } else {
-        error_type();
+        error_type("type error\n");
         return 0;
     }
 }
 
+bool same_type(Type *ty1, Type *ty2) {
+    if (ty1->kind == ty2->kind ) return true;
+    if ((ty1->kind == TyPtr && ty2->kind == TyArray) || (ty1->kind == TyPtr && ty2->kind == TyArray)) return true;
+    return false;
+}
+
 void add_type(Node *node) {
-    if (!node && node->type) {
+    if (!node || node->type) {
         return;
     }
 
@@ -76,26 +82,36 @@ void add_type(Node *node) {
         add_type(node->lhs);
         add_type(node->rhs);
         
-        if (node->lhs->type->kind == TyInt) {
-            if (node->rhs->type->kind == TyInt) {
-                node->type = new_type(TyInt);
-            } else {
-                node->type = new_type_ptr(node->rhs->type->ptr_to);
+        if (node->rhs->type->kind != TyInt) {
+            Node *tmp = node->rhs;
+            node->rhs = node->lhs;
+            node->lhs = tmp;
+        }
+        if (node->lhs->type->kind == TyInt && node->rhs->type->kind == TyInt) {
+            node->type = new_type(TyInt);
+        }
+        else if (node->rhs->type->kind == TyInt) {
+            switch (node->lhs->type->kind) {
+            case TyArray :
+                node->type = new_type_array(node->lhs->type->ptr_to, ptr_to_size(node->lhs->type));
+                break;
+            case TyPtr :
+                node->type = new_type_ptr(node->lhs->type->ptr_to);
+                break;
+            default:
+                break;
             }
         } else {
-            if (node->rhs->type->kind == TyInt) {
-                node->type = new_type_ptr(node->lhs->type->ptr_to);
-            } else {
-                error_type();
-            }
+            error_type("type error : cannot add this two type\n");
         }
+
         break;
     case NdMul:
     case NdDiv:
         add_type(node->lhs);
         add_type(node->rhs);
         if (node->lhs->type->kind != TyInt || node->rhs->type->kind != TyInt) {
-            error_type();
+            error_type("type error : cannot mul this two type\n");
         }
         node->type = new_type(TyInt);
         break;
@@ -106,21 +122,23 @@ void add_type(Node *node) {
         add_type(node->lhs);
         add_type(node->rhs);
         if (node->lhs->type->kind != node->rhs->type->kind) {
-            error_type();
+            error_type("type error : cannot compare this two type\n");
         }
         node->type = new_type(TyInt);
         break;
     case NdAssign:
         add_type(node->lhs);
         add_type(node->rhs);
-        if (node->lhs->type->kind != node->rhs->type->kind) {
-            error_type();
+
+        if (!same_type(node->lhs->type, node->rhs->type)) {
+            error_type("type error : cannot assign different type\n");
         }
         node->type = node->lhs->type;
+        break;
     case NdDeref:
         add_type(node->lhs);
-        if (node->lhs->type->kind != TyPtr) {
-            error_type();
+        if (node->lhs->type->kind != TyPtr && node->lhs->type->kind != TyArray) {
+            error_type("type error : cannot deref this type\n");
         }
         node->type = node->lhs->type->ptr_to;
         break;
@@ -149,8 +167,6 @@ void add_type(Node *node) {
         break;
     case NdFuncall:
         node->type = find_return_type(node->func_name, node->func_name_len); 
-        break;
-    default:
         break;
     }
     return;

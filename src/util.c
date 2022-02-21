@@ -26,7 +26,9 @@ void error_codegen() {
     exit(1);
 }
 
-void error_type() {
-    fprintf(stderr, "type error\n");
+void error_type(char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
     exit(1);
 }

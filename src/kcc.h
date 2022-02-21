@@ -160,7 +160,7 @@ int align_to(int x, int align);
 void error_tokenize(char *p);
 void error_parse(Token *token);
 void error_codegen();
-void error_type();
+void error_type(char *fmt, ...);
 
 //
 // debug.c

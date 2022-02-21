@@ -123,9 +123,11 @@ void codegen_expr(Node *node) {
         return;
     case NdDeref:
         codegen_expr(node->lhs);
-        stack_pop("  pop rax\n");
-        printf("  mov rax, [rax]\n");
-        stack_push("  push rax\n");
+        if (node->type->kind != TyArray) {
+            stack_pop("  pop rax\n");
+            printf("  mov rax, [rax]\n");
+            stack_push("  push rax\n");
+        }
         return;
     case NdRef:
         gen_addr(node->lhs);

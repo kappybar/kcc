@@ -274,7 +274,7 @@ Node *new_add(Node *lhs, Node *rhs) {
         return new_node(NdAdd, lhs , rhs);
     } 
     else {
-        error_type();
+        error_type("type error : cannot add this two type\n");
         return NULL;
     }
 }
@@ -391,20 +391,19 @@ Type *declspec(Token **token) {
 }
 
 // direct_decl =   ident
-//               | ident "[" number "]" // I implement only number array temporaly, 1-dim array
+//               | direct_decl "[" number "]" 
 Obj *direct_decl(Token **token, Type *type) {
     Token *token_ident = expect_ident(token);
     find_obj(token_ident, false); // should_exist = false
 
-    if (consume(token, "[")) {
+    while (consume(token, "[")) {
         int size = expect_number(token);
+        type = new_type_array(type, size);
         expect(token, "]");
-        Obj *obj = new_obj(token_ident, new_type_array(type, size));
-        return obj;
-    } else {
-        Obj *obj = new_obj(token_ident, type);
-        return obj;
     }
+
+    Obj *obj = new_obj(token_ident, type);
+    return obj;
 }
 
 // declaration = declspec "*"* direct_decl ";"
@@ -567,6 +566,11 @@ void func_def(Token **token) {
     // body
     expect(token, "{");
     Node *node = compound_stmt(token);
+
+    // add type
+    for (Node *cur = node;cur;cur = cur->next) {
+        add_type(cur);
+    }
 
     func->body = node;
     func->locals = locals;
