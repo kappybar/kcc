@@ -26,7 +26,7 @@ bool at_eof(Token *token) {
 
 // tokenの種類が数字なら、その値を返し、トークンを一つ先に進める。
 int expect_number(Token **token) {
-    if ((*token)->kind != TkNum) error_parse(*token);
+    if ((*token)->kind != TkNum) error_parse(*token, "expect number\n");
     int val = (*token)->val;
     *token = (*token)->next;
     return val;
@@ -48,7 +48,7 @@ Token *consume_ident(Token **token) {
 
 Token *expect_ident(Token **token) {
     if ((*token)->kind != TkIdent) {
-        error_parse(*token);
+        error_parse(*token, "expect ident\n");
         return NULL;
     }    
     Token *token_return = *token;
@@ -63,13 +63,13 @@ bool consume_keyword(Token **token, char *keyword) {
 }
 
 void expect_keyword(Token **token, char *keyword) {
-    if ((*token)->kind != TkKeyword || !equal(*token, keyword)) error_parse(*token);
+    if ((*token)->kind != TkKeyword || !equal(*token, keyword)) error_parse(*token, "expect keyword\n");
     *token = (*token)->next;
     return;
 }
 
 void expect(Token **token, char *op) {
-    if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token);
+    if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token, "expect %s\n", op);
     *token = (*token)->next;
     return;
 }
@@ -87,13 +87,13 @@ Obj *find_obj(Token *token, bool should_exist) {
     for (Obj *obj = locals;obj; obj = obj->next) {
         if (len == obj->len && strncmp(name, obj->name, len) == 0) {
             if (!should_exist) {
-                error_parse(token);
+                error_parse(token, "redeclaration\n");
             }
             return obj;
         }
     }
     if (should_exist) {
-        error_parse(token);
+        error_parse(token, "undefinde variable\n");
     }
     return NULL;
 }
@@ -202,8 +202,7 @@ Node *postfix(Token **token) {
             continue;
         }
         if (consume(token, "(")) {
-            error_parse(*token);
-            // function pointer is not supported now
+            error_parse(*token, "function pointer is not supported now\n");
             continue;
         }
 
@@ -230,7 +229,7 @@ Node *unary(Token **token) {
         Node *node = unary(token);
         add_type(node);
         if (!node->type) {
-            error_parse(*token);
+            error_parse(*token, "expected expression\n");
         }
         return new_node_num(sizeof_type(node->type));
     } else {

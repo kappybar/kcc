@@ -15,9 +15,14 @@ void error_tokenize(char *p) {
     exit(1);
 }
 
-void error_parse(Token *token) {
+void error_parse(Token *token, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    char s[100];
+    strncpy(s, "^ parse error ", 14);
+    strcpy(s+14, fmt);
     fprintf(stderr, "%s\n", token->str);
-    fprintf(stderr, "^ parse error");
+    vfprintf(stderr, s, ap);
     exit(1);
 }
 

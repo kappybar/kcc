@@ -158,7 +158,7 @@ void codegen(Function *func);
 int counter();
 int align_to(int x, int align);
 void error_tokenize(char *p);
-void error_parse(Token *token);
+void error_parse(Token *token, const char *fmt, ...);
 void error_codegen();
 void error_type(char *fmt, ...);
 
