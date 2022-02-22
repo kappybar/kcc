@@ -3,18 +3,31 @@
 Obj *locals;
 Obj *globals;
 
+// expr
+Node *argument(Token **token);
 Node *primary(Token **token);
+Node *postfix(Token **token);
 Node *unary(Token **token);
-Node *add(Token **token);
-Node *new_add(Node *lhs, Node *rhs);
 Node *mul(Token **token);
+Node *new_add(Node *lhs, Node *rhs);
+Node *new_sub(Node *lhs, Node *rhs);
+Node *add(Token **token);
 Node *relational (Token **token);
-Node *assign(Token **token);
 Node *equality(Token **token);
+Node *assign(Token **token);
 Node *expr(Token **token);
+
+// stmt
 Node *stmt(Token **token);
 Node *compound_stmt(Token **token);
-// Function *program(Token **token);
+
+// declare
+Obj *params(Token **token);
+Type *declspec(Token **token);
+Obj *direct_decl(Token **token, Type *type);
+Obj *declarator(Token **token, Type *type);
+Node *declaration(Token **token);
+void func_def(Token **token);
 
 bool equal(Token *token, char *s) {
     return (memcmp(token->str, s, token->len) == 0) && s[token->len] == '\0';
@@ -396,62 +409,6 @@ Node *expr(Token **token) {
     return assign(token);
 }
 
-// declspec = "int"
-Type *declspec(Token **token) {
-    expect_keyword(token, "int");
-    return new_type(TyInt);
-}
-
-// direct_decl =   ident
-//               | direct_decl "[" number "]" 
-Obj *direct_decl(Token **token, Type *type) {
-    Token *token_ident = expect_ident(token);
-    find_obj(token_ident, false); // should_exist = false
-
-    while (consume(token, "[")) {
-        int size = expect_number(token);
-        type = new_type_array(type, size);
-        expect(token, "]");
-    }
-
-    Obj *obj = new_lvar(token_ident, type);
-    return obj;
-}
-
-// declaration = declspec "*"* direct_decl ("=" expr)? ("," "*"* direct_decl ("=" expr)? )* ";"
-Node *declaration(Token **token) {
-    Type *base_type = declspec(token);
-
-    Node head;
-    Node *cur = &head;
-
-    int i = 0;
-    while(!consume(token, ";")) {
-        if (i++ > 0) {
-            expect(token, ",");
-        }
-
-        Type *type = base_type;
-        while (consume(token, "*")) {
-            type = new_type_ptr(type);
-        }
-
-        Node *var = new_node_lvar( direct_decl(token, type) );
-        if (consume(token, "=")) {
-            cur->next = new_node(NdAssign, var, expr(token));
-            cur = cur->next;
-        } else {
-            cur->next = var;
-            cur = cur->next;
-        }
-    
-    }
-
-    Node *node = new_node(NdBlock, NULL, NULL);
-    node->body = head.next;
-    return node;
-}
-
 // stmt =   expr? ";" 
 //        | "return" expr ";"
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
@@ -535,21 +492,14 @@ Node *compound_stmt(Token **token) {
     return head.next;
 }
 
-// decl = declspec "*"* direct_decl
-Obj *decl(Token **token) {
+// params = declspce declarator ("," declspec declarator) * 
+Obj *params(Token **token) {
     Type *type = declspec(token);
-    while(consume(token, "*")) {
-        type = new_type_ptr(type);
-    }
-    return direct_decl(token, type);
-}
-
-// param = decl ("," decl) * 
-Obj *param(Token **token) {
-    decl(token);
+    declarator(token, type);
 
     while (consume(token, ",")) {
-        decl(token);
+        Type *ty = declspec(token);
+        declarator(token, ty);
     }
 
     for (Obj *arg = locals;arg;arg = arg->next) {
@@ -564,6 +514,78 @@ Obj *param(Token **token) {
     return locals;
 }
 
+// declspec = "int"
+Type *declspec(Token **token) {
+    expect_keyword(token, "int");
+    return new_type(TyInt);
+}
+
+// direct_decl =   ident
+//               | ident ("[" number "]")* 
+//               | ident ("(" params? ")")?
+Obj *direct_decl(Token **token, Type *type) {
+    Token *token_ident = expect_ident(token);
+
+    // function
+    if (consume(token, "(")) {
+        Obj *param = NULL;
+        if (!consume(token, ")")) {
+            param = params(token);
+            expect(token, ")");
+        }
+        Obj *fn = new_fun(token_ident, type, param);
+        return fn;
+    }
+
+    // lvar
+    find_obj(token_ident, false); // should_exist = false
+    while (consume(token, "[")) {
+        int size = expect_number(token);
+        type = new_type_array(type, size);
+        expect(token, "]");
+    }
+
+    Obj *obj = new_lvar(token_ident, type);
+    return obj;
+}
+
+// declarator = "*"* direct_decl
+Obj *declarator(Token **token, Type *type) {
+    while (consume(token, "*")) {
+        type = new_type_ptr(type);
+    }
+    return direct_decl(token, type);
+}
+
+// declaration = declspec declarator ("=" expr)? ("," declarator ("=" expr)? )* ";"
+Node *declaration(Token **token) {
+    Type *base_type = declspec(token);
+
+    Node head;
+    Node *cur = &head;
+
+    int i = 0;
+    while(!consume(token, ";")) {
+        if (i++ > 0) {
+            expect(token, ",");
+        }
+
+        Node *var = new_node_lvar( declarator(token, base_type) );
+        if (consume(token, "=")) {
+            cur->next = new_node(NdAssign, var, expr(token));
+            cur = cur->next;
+        } else {
+            cur->next = var;
+            cur = cur->next;
+        }
+    
+    }
+
+    Node *node = new_node(NdBlock, NULL, NULL);
+    node->body = head.next;
+    return node;
+}
+
 void allocate_stack_offset(Obj *func) {
     int stack_size = 0;
     for (Obj *obj = func->locals;obj;obj = obj->next) {
@@ -575,25 +597,10 @@ void allocate_stack_offset(Obj *func) {
     return;
 }
 
-// func_def = declspec "*"* ident "(" param ")"  "{" compound_stmt
+// func_def = declspec declarator "{" compound_stmt
 void func_def(Token **token) {
     Type *type = declspec(token);
-
-    while(consume(token, "*")) {
-        type = new_type_ptr(type);
-    }
-    Token *token_ident = expect_ident(token);
-    
-    // param
-    Obj *params = NULL;
-    expect(token, "(");
-    if (!consume(token, ")")) {
-        params = param(token);
-        expect(token, ")");
-    }
-
-    // set function
-    Obj *fn = new_fun(token_ident, type, params);
+    Obj *fn = declarator(token, type);
 
     // body
     expect(token, "{");
