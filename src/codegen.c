@@ -9,6 +9,7 @@ void codegen_stmt(Node *node);
 void codegen_function(Obj *func);
 
 const char *args_reg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+const char *args_reg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 int depth = 0;
 
 void stack_pop(char *fmt, ...) {
@@ -131,7 +132,11 @@ void codegen_expr(Node *node) {
         } else {
             gen_addr(node);
             stack_pop("  pop rax\n");
-            printf("  mov rax, [rax]\n");
+            if (node->type->kind == TyInt) {
+                printf("  mov eax, [rax]\n");
+            } else {
+                printf("  mov rax, [rax]\n");
+            }
             stack_push("  push rax\n");
         }
         return;
@@ -140,7 +145,11 @@ void codegen_expr(Node *node) {
         codegen_expr(node->rhs);
         stack_pop("  pop rdi # rhs \n"); 
         stack_pop("  pop rax # lhs addr \n"); 
-        printf("  mov [rax], rdi\n");
+        if (node->type->kind == TyInt) {
+            printf("  mov [rax], edi\n");
+        } else {
+            printf("  mov [rax], rdi\n");
+        }
         stack_push("  push rdi\n");
         return;
     case NdDeref:
@@ -252,7 +261,11 @@ void codegen_function(Obj *func) {
     int i = 0;
     for (Obj *arg = func->args;arg;arg = arg->next) {
         printf("  lea rax, [rbp%+d]\n", -arg->offset);
-        printf("  mov [rax], %s\n", args_reg[i++]);
+        if (arg->type->kind == TyInt) {
+            printf("  mov [rax], %s\n", args_reg32[i++]);
+        } else {
+            printf("  mov [rax], %s\n", args_reg[i++]);
+        }
     }
 
     for (Node *cur = func->body;cur;cur = cur->next) {

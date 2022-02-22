@@ -42,7 +42,7 @@ Type *find_return_type(char *func_name, int func_name_len) {
 int sizeof_type(Type *ty) {
     switch (ty->kind) {
     case TyInt:
-        return 8;
+        return 4;
     case TyPtr:
         return 8;
     case TyArray:
