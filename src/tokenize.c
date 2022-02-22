@@ -85,6 +85,21 @@ Token *tokenize(char *p) {
             }
         }
 
+        // string literal "a"
+        if (*p == '"') {
+            char *start = p++;
+            while ((*p) != '"') {
+                if (*p == '\0' || *p == '\n') {
+                    error_tokenize(p);
+                }
+                p++;
+            }
+            p++;
+            cur = new_token(TkString, cur, start);
+            cur->len = p - start;
+            continue;
+        }
+
         // reserved
         int len = isreserved(p);
         if (len > 0) {

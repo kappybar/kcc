@@ -23,6 +23,7 @@ typedef enum {
     TkNum,      // number
     TkIdent,    // Identifier
     TkKeyword,  // return
+    TkString,   // string ".."
     TkEof       // end of file
 } TokenKind;
 
@@ -81,6 +82,8 @@ struct Obj {
     int len;
     int offset;
     bool is_global;
+    bool is_string;
+    char *str;
 
     // Function
     bool is_function;

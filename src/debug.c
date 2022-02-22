@@ -30,6 +30,10 @@ void display_token(Token *token) {
             strncpy(s, cur->str, cur->len);
             fprintf(stderr, "Keyword : %s\n", s);
             break;
+        case TkString:
+            strncpy(s, cur->str, cur->len);
+            fprintf(stderr, "String : %s\n", s);
+            break;
         case TkEof:
             fprintf(stderr, "eof\n");
             break;

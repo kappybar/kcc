@@ -35,7 +35,14 @@ void codegen_gvar(Obj *obj) {
     s[obj->len] = '\0';
     printf(".data\n");
     printf("%s:\n", s);
-    printf("  .zero %d\n", sizeof_type(obj->type));
+    if (obj->is_string) {
+        char str[100];
+        strncpy(str, obj->str, obj->type->array_size + 1);
+        str[obj->type->array_size + 1] = '\0';
+        printf("  .string %s\n", str);
+    } else {
+        printf("  .zero %d\n", sizeof_type(obj->type));
+    }
     return;
 }
 

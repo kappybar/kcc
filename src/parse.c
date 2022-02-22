@@ -45,6 +45,13 @@ int expect_number(Token **token) {
     return val;
 }
 
+Token *consume_string(Token **token) {
+    if ((*token)->kind != TkString) return NULL;
+    Token *token_return = *token;
+    *token = (*token)->next;
+    return token_return;
+}
+
 // tokenがopと一致していたらtrueを返し、トークンを一つ進める。
 bool consume(Token **token, char *op) {
     if ((*token)->kind != TkReserved || !equal(*token, op)) return false;
@@ -150,6 +157,7 @@ Obj *new_lvar(Token *token, Type *type) {
     obj->len = token->len;
     obj->name = token->str;
     obj->type = type;
+    obj->is_string = false;
     obj->is_function = false;
     obj->is_global = false;
     locals = obj;
@@ -162,6 +170,7 @@ Obj *new_gvar(Token *token, Type *type) {
     obj->len = token->len;
     obj->name = token->str;
     obj->type = type;
+    obj->is_string = false;
     obj->is_function = false;
     obj->is_global = true;
     globals = obj;
@@ -175,9 +184,32 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params) {
     fn->name = token->str;
     fn->return_type = return_ty;
     fn->args = params;
+    fn->is_string = false;
     fn->is_function = true;
     globals = fn;
     return fn;
+}
+
+char *unique_str_name() {
+    int cnt = counter();
+    char *name = calloc(10, sizeof(char));
+    int len = sprintf(name, ".L%d", cnt);
+    name[len] = '\0';
+    return name;
+}
+
+Obj *new_string(Token *token) {
+    Obj *obj = calloc(1, sizeof(Obj));
+    obj->next = globals;
+    obj->name = unique_str_name();
+    obj->len = strlen(obj->name);
+    obj->type = new_type_array(new_type(TyChar), token->len - 1);
+    obj->is_string = true;
+    obj->str = token->str;
+    obj->is_function = false;
+    obj->is_global = true;
+    globals = obj;
+    return obj;
 }
  
 
@@ -231,6 +263,7 @@ Node *argument(Token **token) {
 //           | ident "(" argument ")"
 //           | ident "[" expr "]"
 //           | ident 
+//           | string
 Node *primary(Token **token) {
     if (consume(token, "(")) {
         Node *node = expr(token);
@@ -261,6 +294,12 @@ Node *primary(Token **token) {
             node = new_node(NdDeref, node, NULL);
             expect(token, "]");
         }
+        return node;
+    }
+    Token *token_string = consume_string(token);
+    if (token_string) {
+        Obj *obj = new_string(token_string);
+        Node *node = new_node_obj(obj);
         return node;
     }
     int val = expect_number(token);
