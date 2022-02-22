@@ -60,6 +60,7 @@ int ptr_to_size(Type *ty) {
 }
 
 bool same_type(Type *ty1, Type *ty2) {
+    if (!ty1 || !ty2) return false;
     if (ty1->kind == ty2->kind ) return true;
     if ((ty1->kind == TyPtr && ty2->kind == TyArray) || (ty1->kind == TyPtr && ty2->kind == TyArray)) return true;
     return false;
@@ -75,6 +76,7 @@ void add_type(Node *node) {
         node->type = new_type(TyInt);
         break;
     case NdLvar:
+    case NdGvar:
         node->type = node->obj->type;
         break;
     case NdAdd:

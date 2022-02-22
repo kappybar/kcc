@@ -76,6 +76,7 @@ struct Obj {
     char *name;
     int len;
     int offset;
+    bool is_global;
 
     // Function
     bool is_function;
@@ -101,6 +102,7 @@ typedef enum {
     NdLe,       // <=
     NdAssign,   // =
     NdLvar,     // Local variable
+    NdGvar,     // Global variable
     NdReturn,   // return
     NdIf,       // if
     NdFor,      // for

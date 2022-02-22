@@ -1,5 +1,15 @@
 #include "kcc.h"
 
+void display_space(int size);
+void display_token(Token *token);
+void display_type(Type *type);
+void display_lvar(Obj *obj);
+void display_gvar(Obj *obj);
+void display_obj(Obj *obj);
+void display_node(Node *node, int indent);
+void display_child(Node *node, int indent);
+void display_function(Obj *func);
+
 void display_token(Token *token) {
     for (Token *cur = token;cur;cur = cur->next) {
         char s[cur->len + 1];
@@ -45,7 +55,7 @@ void display_type(Type *type) {
             width += 9;
             break;
         case TyPtr:
-            strncpy(s + width, "ptr of ", 7);
+            strncpy(s + width, "ptr to ", 7);
             width += 7;
             break;
         default:
@@ -57,17 +67,35 @@ void display_type(Type *type) {
     return;
 }
 
-void display_obj(Obj *obj) {
+void display_lvar(Obj *obj) {
     char s[obj->len + 1];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
-    fprintf(stderr, "(%s, offset : %d,", s, obj->offset);
+    fprintf(stderr, "(%s, local var,  offset : %d,", s, obj->offset);
     display_type(obj->type);
     fprintf(stderr, ")");
     return;
 }
 
-void display_node(Node *node, int indent);
+void display_gvar(Obj *obj) {
+    char s[obj->len + 1];
+    strncpy(s, obj->name, obj->len);
+    s[obj->len] = '\0';
+    fprintf(stderr, "(%s, global var", s);
+    display_type(obj->type);
+    fprintf(stderr, ")");
+    return;
+}
+
+void display_obj(Obj *obj) {
+    if (obj->is_global) {
+        display_gvar(obj);
+    } else {
+        display_lvar(obj);
+    }
+    return;
+}
+
 
 void display_space(int size) {
     char s[size + 1];
@@ -93,7 +121,13 @@ void display_node(Node *node, int indent) {
         break;
     case NdLvar:
         fprintf(stderr, "Lvar : ");
-        display_obj(node->obj);
+        display_lvar(node->obj);
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        break;
+     case NdGvar:
+        fprintf(stderr, "Gvar : ");
+        display_gvar(node->obj);
         display_type(node->type);
         fprintf(stderr, "\n");
         break;
@@ -257,6 +291,10 @@ void display_program(Obj *func) {
     for (Obj *fn = func;fn;fn = fn->next) {
         if (fn->is_function) {
             display_function(fn);
+        } else {
+            fprintf(stderr, "Gvar : ");
+            display_gvar(fn);
+            fprintf(stderr, "\n");
         }
     }
     return;

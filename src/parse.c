@@ -24,10 +24,10 @@ Node *compound_stmt(Token **token);
 // declare
 Obj *params(Token **token);
 Type *declspec(Token **token);
-Obj *direct_decl(Token **token, Type *type);
-Obj *declarator(Token **token, Type *type);
-Node *declaration(Token **token);
-void func_def(Token **token);
+Obj *direct_decl(Token **token, Type *type, bool is_global);
+Obj *declarator(Token **token, Type *type, bool is_global);
+Node *declaration(Token **token, bool is_global);
+void def(Token **token);
 
 bool equal(Token *token, char *s) {
     return (memcmp(token->str, s, token->len) == 0) && s[token->len] == '\0';
@@ -94,20 +94,41 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Obj *find_obj(Token *token, bool should_exist) {
+
+Obj *find_lvar(Token *token, bool should_exist) {
     char *name = token->str;
     int len = token->len;
     for (Obj *obj = locals;obj; obj = obj->next) {
         if (len == obj->len && strncmp(name, obj->name, len) == 0) {
-            if (!should_exist) {
-                error_parse(token, "redeclaration\n");
-            }
             return obj;
         }
     }
-    if (should_exist) {
-        error_parse(token, "undefinde variable\n");
+    return NULL;
+}
+
+Obj *find_gvar(Token *token, bool should_exist) {
+    char *name = token->str;
+    int len = token->len;
+    for (Obj *obj = globals;obj; obj = obj->next) {
+        if (len == obj->len && strncmp(name, obj->name, len) == 0) {
+            return obj;
+        }
     }
+    return NULL;
+}
+
+Obj *find_obj(Token *token, bool should_exist) {
+    Obj *lvar = find_lvar(token, should_exist);
+    if (lvar) {
+        if (should_exist) return lvar;
+        else error_parse(token, "redeclaration\n");
+    }
+    Obj *gvar = find_gvar(token, should_exist);
+    if (gvar) {
+        if (should_exist) return gvar;
+        else error_parse(token, "redeclaration\n");
+    }
+    if (should_exist) error_parse(token, "undefinde variable\n");
     return NULL;
 }
 
@@ -130,7 +151,20 @@ Obj *new_lvar(Token *token, Type *type) {
     obj->name = token->str;
     obj->type = type;
     obj->is_function = false;
+    obj->is_global = false;
     locals = obj;
+    return obj;
+}
+
+Obj *new_gvar(Token *token, Type *type) {
+    Obj *obj = calloc(1, sizeof(Obj));
+    obj->next = globals;
+    obj->len = token->len;
+    obj->name = token->str;
+    obj->type = type;
+    obj->is_function = false;
+    obj->is_global = true;
+    globals = obj;
     return obj;
 }
 
@@ -146,12 +180,29 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params) {
     return fn;
 }
  
+
 Node *new_node_lvar(Obj *obj) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = NdLvar;
     node->obj = obj;
     node->type = copy_type(obj->type);
     return node;
+}
+
+Node *new_node_gvar(Obj *obj) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = NdGvar;
+    node->obj = obj;
+    node->type = copy_type(obj->type);
+    return node;
+}
+
+Node *new_node_obj(Obj *obj) {
+    if (obj->is_global) {
+        return new_node_gvar(obj);
+    } else {
+        return new_node_lvar(obj);
+    }
 }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
@@ -202,7 +253,7 @@ Node *primary(Token **token) {
         }
         // variable
         Obj *obj = find_obj(token_ident, true); // should_exist = false
-        Node *node = new_node_lvar(obj);
+        Node *node = new_node_obj(obj);
         add_type(node);
         if (consume(token, "[")) {
             Node *index = expr(token);
@@ -481,7 +532,7 @@ Node *compound_stmt(Token **token) {
 
     while(!consume(token, "}")) {
         if (equal(*token, "int")) {
-            cur->next = declaration(token);
+            cur->next = declaration(token, false);
             cur = cur->next;
         } else {
             cur->next = stmt(token);
@@ -495,11 +546,11 @@ Node *compound_stmt(Token **token) {
 // params = declspce declarator ("," declspec declarator) * 
 Obj *params(Token **token) {
     Type *type = declspec(token);
-    declarator(token, type);
+    declarator(token, type, false);
 
     while (consume(token, ",")) {
         Type *ty = declspec(token);
-        declarator(token, ty);
+        declarator(token, ty, false);
     }
 
     for (Obj *arg = locals;arg;arg = arg->next) {
@@ -510,7 +561,6 @@ Obj *params(Token **token) {
     }
 
     locals_reverse();
-
     return locals;
 }
 
@@ -523,7 +573,7 @@ Type *declspec(Token **token) {
 // direct_decl =   ident
 //               | ident ("[" number "]")* 
 //               | ident ("(" params? ")")?
-Obj *direct_decl(Token **token, Type *type) {
+Obj *direct_decl(Token **token, Type *type, bool is_global) {
     Token *token_ident = expect_ident(token);
 
     // function
@@ -534,6 +584,7 @@ Obj *direct_decl(Token **token, Type *type) {
             expect(token, ")");
         }
         Obj *fn = new_fun(token_ident, type, param);
+        assert(is_global); // only glbal function defnition & I cannot implement function ptr
         return fn;
     }
 
@@ -545,20 +596,23 @@ Obj *direct_decl(Token **token, Type *type) {
         expect(token, "]");
     }
 
-    Obj *obj = new_lvar(token_ident, type);
-    return obj;
+    if (is_global) {
+        return new_gvar(token_ident, type);
+    } else {
+        return new_lvar(token_ident, type); 
+    }
 }
 
 // declarator = "*"* direct_decl
-Obj *declarator(Token **token, Type *type) {
+Obj *declarator(Token **token, Type *type, bool is_global) {
     while (consume(token, "*")) {
         type = new_type_ptr(type);
     }
-    return direct_decl(token, type);
+    return direct_decl(token, type, is_global);
 }
 
 // declaration = declspec declarator ("=" expr)? ("," declarator ("=" expr)? )* ";"
-Node *declaration(Token **token) {
+Node *declaration(Token **token, bool is_global) {
     Type *base_type = declspec(token);
 
     Node head;
@@ -570,7 +624,7 @@ Node *declaration(Token **token) {
             expect(token, ",");
         }
 
-        Node *var = new_node_lvar( declarator(token, base_type) );
+        Node *var = new_node_obj( declarator(token, base_type, is_global) );
         if (consume(token, "=")) {
             cur->next = new_node(NdAssign, var, expr(token));
             cur = cur->next;
@@ -597,23 +651,31 @@ void allocate_stack_offset(Obj *func) {
     return;
 }
 
-// func_def = declspec declarator "{" compound_stmt
-void func_def(Token **token) {
+// definition = declspec declarator "{" compound_stmt 
+//              declspec declarator ";"
+void def(Token **token) {
     Type *type = declspec(token);
-    Obj *fn = declarator(token, type);
+    Obj *fn = declarator(token, type, true);
 
-    // body
-    expect(token, "{");
-    Node *node = compound_stmt(token);
+    if (fn->is_function) {
+        // body
+        expect(token, "{");
+        Node *node = compound_stmt(token);
 
-    // add type
-    for (Node *cur = node;cur;cur = cur->next) {
-        add_type(cur);
+        // add type
+        for (Node *cur = node;cur;cur = cur->next) {
+            add_type(cur);
+        }
+
+        fn->body = node;
+        fn->locals = locals;
+        allocate_stack_offset(fn);
+    } else {
+        expect(token, ";");
+        // global variable initialization
     }
 
-    fn->body = node;
-    fn->locals = locals;
-    allocate_stack_offset(fn);
+    
     locals = NULL;
     return;
 }
@@ -622,7 +684,7 @@ void func_def(Token **token) {
 Obj *program(Token **token) {
 
     while (!at_eof(*token)) {
-        func_def(token);
+        def(token);
     }
 
     return globals;

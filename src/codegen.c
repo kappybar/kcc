@@ -1,7 +1,12 @@
 #include "kcc.h"
 
+void stack_pop(char *fmt, ...);
+void stack_push(char *fmt, ...);
+void gen_addr(Node *node);
+void codegen_gvar(Obj *obj);
 void codegen_expr(Node *node);
 void codegen_stmt(Node *node);
+void codegen_function(Obj *func);
 
 const char *args_reg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 int depth = 0;
@@ -22,6 +27,16 @@ void stack_push(char *fmt, ...) {
     return;
 }
 
+void codegen_gvar(Obj *obj) {
+    char s[100];
+    strncpy(s, obj->name, obj->len);
+    s[obj->len] = '\0';
+    printf(".data\n");
+    printf("%s:\n", s);
+    printf("  .zero %d\n", sizeof_type(obj->type));
+    return;
+}
+
 void gen_addr(Node *node) {
     char s[100];
     switch (node->kind) {
@@ -29,6 +44,12 @@ void gen_addr(Node *node) {
         strncpy(s, node->obj->name, node->obj->len);
         s[node->obj->len] = '\0';
         printf("  lea rax, [rbp%+d] # %s\n", -node->obj->offset, s);
+        stack_push("  push rax\n");
+        break; 
+    case NdGvar:
+        strncpy(s, node->obj->name, node->obj->len);
+        s[node->obj->len] = '\0';
+        printf("  lea rax, [rip+%s]\n", s);
         stack_push("  push rax\n");
         break; 
     case NdDeref:
@@ -104,6 +125,7 @@ void codegen_expr(Node *node) {
         stack_push("  push %d\n", node->val);
         return;
     case NdLvar:
+    case NdGvar:
         if (node->type->kind == TyArray) {
             gen_addr(node);
         } else {
@@ -217,6 +239,7 @@ void codegen_function(Obj *func) {
     char name[func->len + 1];
     strncpy(name, func->name, func->len);
     name[func->len] = '\0';
+    printf(".text\n");
     printf(".globl %s\n", name);
     printf("%s:\n", name);
 
@@ -244,10 +267,13 @@ void codegen_function(Obj *func) {
     return;
 }
 
+
 void codegen(Obj *func) {
     for (Obj *fn = func;fn;fn = fn->next) {
         if (fn->is_function) {
             codegen_function(fn);
+        } else {
+            codegen_gvar(fn);
         }
     }
     return;
