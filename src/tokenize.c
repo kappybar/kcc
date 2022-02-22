@@ -73,6 +73,18 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // char literal 'a'
+        if (*p == '\'') {
+            if (*(p + 2) == '\'') {
+                cur = new_token(TkNum, cur, p);
+                cur->val = *(p + 1);
+                cur->len = 3;
+                p += 3;
+            } else {
+                error_tokenize(p);
+            }
+        }
+
         // reserved
         int len = isreserved(p);
         if (len > 0) {

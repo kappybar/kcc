@@ -91,3 +91,4 @@ assert 18 "char hoge(int a, char b, int c, char d,int e, char f){int g = 1;char 
 assert 5 "char a[3]; int main(){a[0] = -1;a[1] = 2;int x = 4; return a[0]+a[1]+x; }"
 assert 3 "int main(){int a[2];char b[2];int c;char d;a[0] = 1;a[1] = 2;b[0] = 3;b[1] = 4;c = 5;d = 6; return -a[0]+a[1]-b[0]+b[1]-c+d;  }"
 assert 1 "int main(){int a = 3;char b = 4;if (a < b) {return 1;} else {return 0;}}"
+assert 48 "int main(){ return '0'; }"
