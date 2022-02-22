@@ -1,7 +1,7 @@
 #include "kcc.h"
 
 Obj *locals;
-Function *functions;
+Obj *globals;
 
 Node *primary(Token **token);
 Node *unary(Token **token);
@@ -14,7 +14,7 @@ Node *equality(Token **token);
 Node *expr(Token **token);
 Node *stmt(Token **token);
 Node *compound_stmt(Token **token);
-Function *program(Token **token);
+// Function *program(Token **token);
 
 bool equal(Token *token, char *s) {
     return (memcmp(token->str, s, token->len) == 0) && s[token->len] == '\0';
@@ -37,6 +37,12 @@ bool consume(Token **token, char *op) {
     if ((*token)->kind != TkReserved || !equal(*token, op)) return false;
     *token = (*token)->next;
     return true;
+}
+
+void expect(Token **token, char *op) {
+    if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token, "expect %s\n", op);
+    *token = (*token)->next;
+    return;
 }
 
 Token *consume_ident(Token **token) {
@@ -64,12 +70,6 @@ bool consume_keyword(Token **token, char *keyword) {
 
 void expect_keyword(Token **token, char *keyword) {
     if ((*token)->kind != TkKeyword || !equal(*token, keyword)) error_parse(*token, "expect keyword\n");
-    *token = (*token)->next;
-    return;
-}
-
-void expect(Token **token, char *op) {
-    if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token, "expect %s\n", op);
     *token = (*token)->next;
     return;
 }
@@ -110,14 +110,27 @@ void locals_reverse(void) {
     return;
 }
 
-Obj *new_obj(Token *token, Type *type) {
+Obj *new_lvar(Token *token, Type *type) {
     Obj *obj = calloc(1, sizeof(Obj));
     obj->next = locals;
     obj->len = token->len;
     obj->name = token->str;
     obj->type = type;
+    obj->is_function = false;
     locals = obj;
     return obj;
+}
+
+Obj *new_fun(Token *token, Type *return_ty, Obj *params) {
+    Obj *fn = calloc(1, sizeof(Obj));
+    fn->next = globals;
+    fn->len = token->len;
+    fn->name = token->str;
+    fn->return_type = return_ty;
+    fn->args = params;
+    fn->is_function = true;
+    globals = fn;
+    return fn;
 }
  
 Node *new_node_lvar(Obj *obj) {
@@ -401,7 +414,7 @@ Obj *direct_decl(Token **token, Type *type) {
         expect(token, "]");
     }
 
-    Obj *obj = new_obj(token_ident, type);
+    Obj *obj = new_lvar(token_ident, type);
     return obj;
 }
 
@@ -551,7 +564,7 @@ Obj *param(Token **token) {
     return locals;
 }
 
-void allocate_stack_offset(Function *func) {
+void allocate_stack_offset(Obj *func) {
     int stack_size = 0;
     for (Obj *obj = func->locals;obj;obj = obj->next) {
         int size = sizeof_type(obj->type);
@@ -564,26 +577,23 @@ void allocate_stack_offset(Function *func) {
 
 // func_def = declspec "*"* ident "(" param ")"  "{" compound_stmt
 void func_def(Token **token) {
-    Function *func = calloc(1, sizeof(Function));
+    Type *type = declspec(token);
 
-    func->return_type = declspec(token);
     while(consume(token, "*")) {
-        func->return_type = new_type_ptr(func->return_type);
+        type = new_type_ptr(type);
     }
     Token *token_ident = expect_ident(token);
     
     // param
+    Obj *params = NULL;
     expect(token, "(");
     if (!consume(token, ")")) {
-        func->args = param(token);
+        params = param(token);
         expect(token, ")");
     }
 
     // set function
-    func->next = functions;
-    functions = func;
-    func->name = token_ident->str;
-    func->name_len = token_ident->len;
+    Obj *fn = new_fun(token_ident, type, params);
 
     // body
     expect(token, "{");
@@ -594,25 +604,25 @@ void func_def(Token **token) {
         add_type(cur);
     }
 
-    func->body = node;
-    func->locals = locals;
-    allocate_stack_offset(func);
+    fn->body = node;
+    fn->locals = locals;
+    allocate_stack_offset(fn);
     locals = NULL;
     return;
 }
 
 // program = func_def *
-Function *program(Token **token) {
+Obj *program(Token **token) {
 
     while (!at_eof(*token)) {
         func_def(token);
     }
 
-    return functions;
+    return globals;
 }
 
 
 
-Function *parse(Token **token) {
+Obj *parse(Token **token) {
     return program(token);
 }

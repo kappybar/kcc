@@ -85,9 +85,6 @@ void display_child(Node *node, int indent) {
 
 void display_node(Node *node, int indent) {
     display_space(indent);
-    // display_type(node->type);
-    // fprintf(stderr, "\n");
-    // display_space(indent);
     switch (node->kind) {
     case NdNum:
         fprintf(stderr, "Num : %d", node->val);
@@ -235,10 +232,10 @@ void display_node(Node *node, int indent) {
     return;
 }
 
-void display_function(Function *func) {
+void display_function(Obj *func) {
     char s[100];
-    strncpy(s, func->name, func->name_len);
-    s[func->name_len] = '\0';
+    strncpy(s, func->name, func->len);
+    s[func->len] = '\0';
     fprintf(stderr, "Function : (name : %s, return ", s);
     display_type(func->return_type);
     fprintf(stderr, ")\n");
@@ -256,9 +253,11 @@ void display_function(Function *func) {
     return;
 }
 
-void display_program(Function *func) {
-    for (Function *fn = func;fn;fn = fn->next) {
-        display_function(fn);
+void display_program(Obj *func) {
+    for (Obj *fn = func;fn;fn = fn->next) {
+        if (fn->is_function) {
+            display_function(fn);
+        }
     }
     return;
 }

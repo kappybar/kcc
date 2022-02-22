@@ -213,10 +213,10 @@ void codegen_expr(Node *node) {
     return;
 }
 
-void codegen_function(Function *func) {
-    char name[func->name_len + 1];
-    strncpy(name, func->name, func->name_len);
-    name[func->name_len] = '\0';
+void codegen_function(Obj *func) {
+    char name[func->len + 1];
+    strncpy(name, func->name, func->len);
+    name[func->len] = '\0';
     printf(".globl %s\n", name);
     printf("%s:\n", name);
 
@@ -244,9 +244,11 @@ void codegen_function(Function *func) {
     return;
 }
 
-void codegen(Function *func) {
-    for (Function *fn = func;fn;fn = fn->next) {
-        codegen_function(fn);
+void codegen(Obj *func) {
+    for (Obj *fn = func;fn;fn = fn->next) {
+        if (fn->is_function) {
+            codegen_function(fn);
+        }
     }
     return;
 }

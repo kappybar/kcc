@@ -13,7 +13,7 @@ int main(int argc,char *argv[]) {
     display_token(token);
 
     // parse
-    Function *func = parse(&token);
+    Obj *func = parse(&token);
     // for debug
     fprintf(stderr, "parse finish\n");
     display_program(func);

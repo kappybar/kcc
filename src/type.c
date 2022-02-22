@@ -30,8 +30,8 @@ Type *copy_type(Type *ty) {
 }
 
 Type *find_return_type(char *func_name, int func_name_len) {
-    for (Function *fn = functions;fn;fn = fn->next) {
-        if (fn->name_len == func_name_len && strncmp(func_name, fn->name, func_name_len) == 0) {
+    for (Obj *fn = globals;fn;fn = fn->next) {
+        if (fn->is_function && fn->len == func_name_len && strncmp(func_name, fn->name, func_name_len) == 0) {
             return fn->return_type;
         }
     }

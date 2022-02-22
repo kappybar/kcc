@@ -12,7 +12,6 @@ typedef struct Token Token;
 typedef struct Type Type;
 typedef struct Obj Obj;
 typedef struct Node Node;
-typedef struct Function Function;
 
 
 //
@@ -77,9 +76,18 @@ struct Obj {
     char *name;
     int len;
     int offset;
+
+    // Function
+    bool is_function;
+    Node *body;
+    Obj *locals;
+    Obj *args;
+    Type *return_type;
+    int stack_size;
 };
 
 extern Obj *locals;
+extern Obj *globals;
 
 typedef enum {
     NdNum,      // num
@@ -125,31 +133,18 @@ struct Node {
     Node *arguments;
 };
 
-extern Function *functions;
-
-struct Function {
-    Function *next;
-    Node *body;
-    Obj *locals;
-    Obj *args;
-    Type *return_type;
-
-    char *name;
-    int name_len;
-    int stack_size;
-};
 
 bool equal(Token *token, char *s);
 bool at_eof(Token *token);
 bool consume(Token **token, char *op);
 int expect_number(Token **token);
-Function *parse(Token **token);
+Obj *parse(Token **token);
 
 //
 // codegen.c
 //
 
-void codegen(Function *func);
+void codegen(Obj *func);
 
 //
 // util.c
@@ -167,5 +162,5 @@ void error_type(char *fmt, ...);
 //
 
 void display_token(Token *token);
-void display_function(Function *func);
-void display_program(Function *func);
+void display_function(Obj *func);
+void display_program(Obj *func);
