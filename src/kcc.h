@@ -45,6 +45,7 @@ Token *tokenize(char *p);
 
 typedef enum {
     TyInt,
+    TyChar,
     TyPtr,
     TyArray,
 } TypeKind;
@@ -61,6 +62,9 @@ Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
 Type *new_type_array(Type *ty, size_t size);
 Type *copy_type(Type *ty);
+int alignment(Type *ty);
+bool is_integer(Type *ty);
+bool is_pointer(Type *ty);
 int sizeof_type(Type *ty);
 int ptr_to_size(Type *ty);
 void add_type(Node *node);

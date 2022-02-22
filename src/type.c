@@ -39,10 +39,25 @@ Type *find_return_type(char *func_name, int func_name_len) {
     return NULL;
 }
 
+int alignment(Type *ty) {
+    switch (ty->kind) {
+    case TyInt:
+        return 4;
+    case TyChar:
+        return 1;
+    case TyPtr:
+        return 4;
+    case TyArray:
+        return alignment(ty->ptr_to);
+    }
+}
+
 int sizeof_type(Type *ty) {
     switch (ty->kind) {
     case TyInt:
         return 4;
+    case TyChar:
+        return 1;
     case TyPtr:
         return 8;
     case TyArray:
@@ -59,10 +74,34 @@ int ptr_to_size(Type *ty) {
     }
 }
 
+bool is_integer(Type *ty) {
+    if (!ty) {
+        return false;
+    }
+    return (ty->kind == TyInt || ty->kind == TyChar);
+}
+
+bool is_pointer(Type *ty) {
+    if (!ty) {
+        return false;
+    }
+    return (ty->kind == TyPtr || ty->kind == TyArray); 
+    // implicity type conversion array -> ptr
+}
+
 bool same_type(Type *ty1, Type *ty2) {
-    if (!ty1 || !ty2) return false;
-    if (ty1->kind == ty2->kind ) return true;
-    if ((ty1->kind == TyPtr && ty2->kind == TyArray) || (ty1->kind == TyPtr && ty2->kind == TyArray)) return true;
+    if (!ty1 || !ty2) {
+        return false;
+    }
+    if (ty1->kind == ty2->kind) {
+        return true;
+    }
+    if (is_integer(ty1) && is_integer(ty2)) {
+        return true;
+    } 
+    if ((ty1->kind == TyPtr && ty2->kind == TyArray) || (ty1->kind == TyPtr && ty2->kind == TyArray)) {
+        return true;
+    }
     return false;
 }
 
@@ -84,15 +123,14 @@ void add_type(Node *node) {
         add_type(node->lhs);
         add_type(node->rhs);
         
-        if (node->rhs->type->kind != TyInt) {
+        if (!is_integer(node->rhs->type)) {
             Node *tmp = node->rhs;
             node->rhs = node->lhs;
             node->lhs = tmp;
         }
-        if (node->lhs->type->kind == TyInt && node->rhs->type->kind == TyInt) {
+        if (is_integer(node->lhs->type) && is_integer(node->rhs->type)) {
             node->type = new_type(TyInt);
-        }
-        else if (node->rhs->type->kind == TyInt) {
+        } else if (is_integer(node->rhs->type)) {
             switch (node->lhs->type->kind) {
             case TyArray :
                 node->type = new_type_array(node->lhs->type->ptr_to, ptr_to_size(node->lhs->type));
@@ -112,7 +150,7 @@ void add_type(Node *node) {
     case NdDiv:
         add_type(node->lhs);
         add_type(node->rhs);
-        if (node->lhs->type->kind != TyInt || node->rhs->type->kind != TyInt) {
+        if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
             error_type("type error : cannot mul this two type\n");
         }
         node->type = new_type(TyInt);
@@ -123,7 +161,7 @@ void add_type(Node *node) {
     case NdLe:
         add_type(node->lhs);
         add_type(node->rhs);
-        if (node->lhs->type->kind != node->rhs->type->kind) {
+        if (!same_type(node->lhs->type, node->rhs->type)) {
             error_type("type error : cannot compare this two type\n");
         }
         node->type = new_type(TyInt);

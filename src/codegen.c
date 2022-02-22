@@ -8,8 +8,9 @@ void codegen_expr(Node *node);
 void codegen_stmt(Node *node);
 void codegen_function(Obj *func);
 
-const char *args_reg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+const char *args_reg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 const char *args_reg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+const char *args_reg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
 int depth = 0;
 
 void stack_pop(char *fmt, ...) {
@@ -38,6 +39,36 @@ void codegen_gvar(Obj *obj) {
     return;
 }
 
+void codegen_load(Type *type, const char *reg64, const char *reg32, const char *src) {
+    switch(type->kind) {
+    case TyInt :
+        printf("  mov %s, [%s]\n", reg32, src);
+        break;
+    case TyChar :
+        printf("  movsx %s, BYTE PTR [%s]\n", reg32, src);
+        break;
+    default : 
+        printf("  mov %s, [%s]\n", reg64, src);
+        break;
+    }
+    return;
+}
+
+void codegen_store(Type *type, const char *reg64, const char *reg32, const char *reg8, const char *dst) {
+    switch (type->kind) {
+    case TyInt :
+        printf("  mov [%s], %s\n", dst, reg32);
+        break;
+    case TyChar :
+        printf("  mov [%s], %s\n", dst, reg8);
+        break;
+    default:
+        printf("  mov [%s], %s\n", dst, reg64);
+        break;
+    }
+    return;
+}
+
 void gen_addr(Node *node) {
     char s[100];
     switch (node->kind) {
@@ -59,7 +90,6 @@ void gen_addr(Node *node) {
     default:
         error_codegen(); 
     }
-
 } 
 
 void codegen_stmt(Node *node) {
@@ -132,11 +162,7 @@ void codegen_expr(Node *node) {
         } else {
             gen_addr(node);
             stack_pop("  pop rax\n");
-            if (node->type->kind == TyInt) {
-                printf("  mov eax, [rax]\n");
-            } else {
-                printf("  mov rax, [rax]\n");
-            }
+            codegen_load(node->type, "rax", "eax", "rax");
             stack_push("  push rax\n");
         }
         return;
@@ -145,11 +171,7 @@ void codegen_expr(Node *node) {
         codegen_expr(node->rhs);
         stack_pop("  pop rdi # rhs \n"); 
         stack_pop("  pop rax # lhs addr \n"); 
-        if (node->type->kind == TyInt) {
-            printf("  mov [rax], edi\n");
-        } else {
-            printf("  mov [rax], rdi\n");
-        }
+        codegen_store(node->type, "rdi", "edi", "dil", "rax");
         stack_push("  push rdi\n");
         return;
     case NdDeref:
@@ -170,7 +192,7 @@ void codegen_expr(Node *node) {
             codegen_expr(nd);
         }
         for (int i = num_of_arg - 1;i >= 0; i--) {
-            stack_pop("  pop %s\n", args_reg[i]);
+            stack_pop("  pop %s\n", args_reg64[i]);
         }
         char name[node->func_name_len + 1];
         strncpy(name, node->func_name, node->func_name_len);
@@ -261,11 +283,8 @@ void codegen_function(Obj *func) {
     int i = 0;
     for (Obj *arg = func->args;arg;arg = arg->next) {
         printf("  lea rax, [rbp%+d]\n", -arg->offset);
-        if (arg->type->kind == TyInt) {
-            printf("  mov [rax], %s\n", args_reg32[i++]);
-        } else {
-            printf("  mov [rax], %s\n", args_reg[i++]);
-        }
+        codegen_store(arg->type, args_reg64[i], args_reg32[i], args_reg8[i], "rax");
+        i++;
     }
 
     for (Node *cur = func->body;cur;cur = cur->next) {

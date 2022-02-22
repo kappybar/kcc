@@ -336,20 +336,18 @@ Node *new_add(Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
 
-    if (lhs->type->kind == TyInt && (rhs->type->kind == TyPtr || rhs->type->kind == TyArray) ) {
-        Node *tmp = lhs;
-        lhs = rhs;
-        rhs = tmp;
+    if (!is_integer(rhs->type)) {
+        Node *tmp = rhs;
+        rhs = lhs;
+        lhs = tmp;
     }
-    if (lhs->type->kind == TyInt && rhs->type->kind == TyInt) {
+    if (is_integer(lhs->type) && is_integer(rhs->type)) {
         return new_node(NdAdd, lhs, rhs);
-    }
-    else if ( (lhs->type->kind == TyPtr || lhs->type->kind == TyArray) && rhs->type->kind == TyInt) {
+    } else if (is_integer(rhs->type) && is_pointer(lhs->type)) {
         int size = ptr_to_size(lhs->type);
         rhs = new_node(NdMul, rhs, new_node_num(size));
         return new_node(NdAdd, lhs , rhs);
-    } 
-    else {
+    } else {
         error_type("type error : cannot add this two type\n");
         return NULL;
     }
@@ -359,23 +357,20 @@ Node *new_sub(Node *lhs, Node *rhs) {
     add_type(lhs);
     add_type(rhs);
 
-    if (lhs->type->kind == TyInt && (rhs->type->kind == TyPtr || rhs->type->kind == TyArray)) {
-        Node *tmp = lhs;
-        lhs = rhs;
-        rhs = tmp;
-    }
-    if (lhs->type->kind == TyInt && rhs->type->kind == TyInt) {
+
+    if (is_integer(lhs->type) && is_integer(rhs->type)) {
         return new_node(NdSub, lhs, rhs);
-    }
-    else if ((lhs->type->kind == TyPtr || lhs->type->kind == TyArray) && rhs->type->kind == TyInt) {
+    } else if (is_pointer(lhs->type) && is_integer(rhs->type)) {
         int size = ptr_to_size(lhs->type);
         rhs = new_node(NdMul, rhs, new_node_num(size));
         return new_node(NdSub, lhs , rhs);
-    } 
-    else {
+    } else if (is_pointer(lhs->type) && is_pointer(rhs->type)) {
         int size = ptr_to_size(lhs->type);
         Node *node = new_node(NdSub, lhs, rhs);
         return new_node(NdDiv, node, new_node_num(size));
+    } else {
+        error_type("type error : cannot sub this two type\n");
+        return NULL;
     }
 }
 
@@ -531,7 +526,7 @@ Node *compound_stmt(Token **token) {
     Node *cur = &head;
 
     while(!consume(token, "}")) {
-        if (equal(*token, "int")) {
+        if (equal(*token, "int") || equal(*token, "char")) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -564,10 +559,13 @@ Obj *params(Token **token) {
     return locals;
 }
 
-// declspec = "int"
+// declspec = "int" | "char"
 Type *declspec(Token **token) {
-    expect_keyword(token, "int");
-    return new_type(TyInt);
+    if (consume_keyword(token, "int")) {
+        return new_type(TyInt);
+    }
+    expect_keyword(token, "char");
+    return new_type(TyChar);
 }
 
 // direct_decl =   ident
@@ -644,6 +642,7 @@ void allocate_stack_offset(Obj *func) {
     int stack_size = 0;
     for (Obj *obj = func->locals;obj;obj = obj->next) {
         int size = sizeof_type(obj->type);
+        stack_size = align_to(stack_size, alignment(obj->type));
         stack_size += size;
         obj->offset = stack_size;
     }
