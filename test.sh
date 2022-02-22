@@ -75,3 +75,5 @@ assert 3 "int *ptr(int *a){ return a; } int main(){ int c[2]; ptr(c)[1] = 3; ret
 assert 10 "int main() { int a[2][2]; a[1][1] = 10; return a[1][1]; }"
 assert 1 "int main() { int a[1][1]; **a = 1; return **a; }"
 assert 3 "int index(int mat[2][2],int i,int j) {return mat[i][j];} int main() { int a[2][2]; a[1][0] = 3; return index(a,1,0); }"
+assert 7 "int main() {int a = 3,b = 4,c;c = a + b;return c; }"
+assert 3 "int main() {int a = 3, *b = &a; return *b; }"

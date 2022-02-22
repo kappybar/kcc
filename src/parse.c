@@ -405,14 +405,37 @@ Obj *direct_decl(Token **token, Type *type) {
     return obj;
 }
 
-// declaration = declspec "*"* direct_decl ";"
+// declaration = declspec "*"* direct_decl ("=" expr)? ("," "*"* direct_decl ("=" expr)? )* ";"
 Node *declaration(Token **token) {
-    Type *type = declspec(token);
-    while (consume(token, "*")) {
-        type = new_type_ptr(type);
+    Type *base_type = declspec(token);
+
+    Node head;
+    Node *cur = &head;
+
+    int i = 0;
+    while(!consume(token, ";")) {
+        if (i++ > 0) {
+            expect(token, ",");
+        }
+
+        Type *type = base_type;
+        while (consume(token, "*")) {
+            type = new_type_ptr(type);
+        }
+
+        Node *var = new_node_lvar( direct_decl(token, type) );
+        if (consume(token, "=")) {
+            cur->next = new_node(NdAssign, var, expr(token));
+            cur = cur->next;
+        } else {
+            cur->next = var;
+            cur = cur->next;
+        }
+    
     }
-    Node *node = new_node_lvar( direct_decl(token, type) );
-    expect(token, ";");
+
+    Node *node = new_node(NdBlock, NULL, NULL);
+    node->body = head.next;
     return node;
 }
 
