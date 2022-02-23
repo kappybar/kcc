@@ -286,6 +286,11 @@ void codegen_expr(Node *node) {
         printf("  cqo\n");
         printf("  idiv rdi\n");
         break;
+    case NdMod:
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+        printf("  mov rax, rdx\n");
+        break;
     case NdEq:
         printf("  cmp rax, rdi\n");
         printf("  sete al\n");

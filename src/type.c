@@ -168,6 +168,7 @@ void add_type(Node *node) {
         break;
     case NdMul:
     case NdDiv:
+    case NdMod:
         add_type(node->lhs);
         add_type(node->rhs);
         if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {

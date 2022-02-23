@@ -104,6 +104,7 @@ typedef enum {
     NdSub,      // -
     NdMul,      // *
     NdDiv,      // /
+    NdMod,      // %
     NdEq,       // ==
     NdNeq,      // !=
     NdLt,       // <

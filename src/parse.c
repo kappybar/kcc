@@ -376,7 +376,7 @@ Node *unary(Token **token) {
     }
 }
 
-// mul = unary ("*" unary | "/" unary) *
+// mul = unary ("*" unary | "/" unary | "%" unary) *
 Node *mul(Token **token) {
     Node *node = unary(token);
     while (1) {
@@ -386,6 +386,10 @@ Node *mul(Token **token) {
         }
         if (consume(token, "/")) {
             node = new_node(NdDiv, node, unary(token));
+            continue;
+        }
+        if (consume(token, "%")) {
+            node = new_node(NdMod, node, unary(token));
             continue;
         }
         break;
