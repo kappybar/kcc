@@ -208,6 +208,11 @@ void add_type(Node *node) {
     case NdFuncall:
         node->type = find_return_type(node->func_name, node->func_name_len); 
         break;
+    case NdInit:
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            add_type(nd);
+        }
+        break;
     }
     return;
 }

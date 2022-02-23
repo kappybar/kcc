@@ -269,6 +269,13 @@ void display_node(Node *node, int indent) {
         }
         break;
         }
+    case NdInit : {
+        fprintf(stderr, "Init\n");
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            display_node(nd, indent + 1);
+        }
+        break;
+    }
     }
     
     return;

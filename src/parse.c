@@ -640,6 +640,71 @@ Obj *direct_decl(Token **token, Type *type, bool is_global) {
     }
 }
 
+// initializer = assign
+//               "{" (initializer ",")* initializer? "}"
+Node *initializer(Token **token) {
+    if (consume(token, "{")) {
+        Node head;
+        Node *cur = &head;
+
+        cur->next = initializer(token);
+        cur = cur->next;
+
+        while(!consume(token, "}")) {
+            expect(token, ",");
+            cur->next = initializer(token);
+            cur = cur->next;
+        }
+
+        Node *node = new_node(NdInit, NULL, NULL);
+        node->body = head.next;
+        return node;
+    } else {
+        return assign(token);
+    }
+}
+
+Node *init_assign(Node *var, Node *init_value) {
+    add_type(var);
+    add_type(init_value);
+    switch (init_value->kind) {
+    case NdInit : {
+        if (var->type->kind == TyArray) {
+            Node head;
+            Node *cur = &head;
+            int i = 0;
+            for (Node *nd = init_value->body;nd;nd = nd->next) {
+                Node *var_i = new_node(NdDeref, new_add(var, new_node_num(i++)), NULL);
+                cur->next = init_assign(var_i, nd);
+                cur = cur->next;
+            }
+            Node *node = new_node(NdBlock, NULL, NULL);
+            node->body = head.next;
+            return node;
+        } else {
+            return init_assign(var, init_value->body);
+        }
+    }
+    case NdGvar : {
+        if (var->type->kind == TyArray && init_value->obj->is_string) {
+            Node head;
+            Node *cur = &head;
+            for (int i = 0;i < init_value->obj->type->array_size - 1; i++) {
+                cur->next = new_node_num(init_value->obj->str[i + 1]);
+                cur = cur->next;
+            }
+            cur->next = new_node_num(0);
+            cur = cur->next;
+            Node *node = new_node(NdInit, NULL, NULL);
+            node->body = head.next;
+            return init_assign(var, node);
+        }
+    }
+    default : 
+        return new_node(NdAssign, var, init_value);
+    }
+}
+
 // declarator = "*"* direct_decl
 Obj *declarator(Token **token, Type *type, bool is_global) {
     while (consume(token, "*")) {
@@ -648,7 +713,7 @@ Obj *declarator(Token **token, Type *type, bool is_global) {
     return direct_decl(token, type, is_global);
 }
 
-// declaration = declspec declarator ("=" expr)? ("," declarator ("=" expr)? )* ";"
+// declaration = declspec declarator ("=" initializer)? ("," declarator ("=" initializer)? )* ";"
 Node *declaration(Token **token, bool is_global) {
     Type *base_type = declspec(token);
 
@@ -663,7 +728,7 @@ Node *declaration(Token **token, bool is_global) {
 
         Node *var = new_node_obj( declarator(token, base_type, is_global) );
         if (consume(token, "=")) {
-            cur->next = new_node(NdAssign, var, expr(token));
+            cur->next = init_assign(var, initializer(token));
             cur = cur->next;
         } else {
             cur->next = var;

@@ -116,7 +116,8 @@ typedef enum {
     NdBlock,    // { .. }
     NdDeref,    // *
     NdRef,      // &
-    NdFuncall  // funtion call
+    NdFuncall,  // funtion call
+    NdInit,     // { .. , .. }
 } NodeKind;
 
 struct Node {
@@ -171,5 +172,6 @@ void error_type(char *fmt, ...);
 //
 
 void display_token(Token *token);
+void display_node(Node *node, int indent);
 void display_function(Obj *func);
 void display_program(Obj *func);
