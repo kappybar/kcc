@@ -686,6 +686,9 @@ Node *init_assign(Node *var, Node *init_value) {
         }
     }
     case NdGvar : {
+        // char *s = "abc"; -> "abc" Global variable
+        // char s[4] = "abc"; -> "abc" initial variable
+        // In later case, I have to initialize s by "abc"
         if (var->type->kind == TyArray && init_value->obj->is_string) {
             Node head;
             Node *cur = &head;
