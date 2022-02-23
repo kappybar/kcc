@@ -668,13 +668,14 @@ Obj *direct_decl(Token **token, Type *type, bool is_global) {
 Node *initializer(Token **token) {
     if (consume(token, "{")) {
         Node head;
+        head.next = NULL;
         Node *cur = &head;
 
-        cur->next = initializer(token);
-        cur = cur->next;
-
+        int i = 0;
         while(!consume(token, "}")) {
-            expect(token, ",");
+            if (i++ > 0) {
+                expect(token, ",");
+            }
             cur->next = initializer(token);
             cur = cur->next;
         }
@@ -694,6 +695,7 @@ Node *init_assign(Node *var, Node *init_value) {
     case NdInit : {
         if (var->type->kind == TyArray) {
             Node head;
+            head.next = NULL;
             Node *cur = &head;
             int i = 0;
             for (Node *nd = init_value->body;nd;nd = nd->next) {

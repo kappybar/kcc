@@ -46,6 +46,13 @@ void codegen_gvar_init(Type *type, Node *init) {
             strncpy(name, init->obj->name, init->obj->len);
             name[init->obj->len] = '\0';
             printf("  .quad %s\n", name);
+        } else if (init->kind == NdRef) {
+            char name[init->lhs->obj->len + 1];
+            strncpy(name, init->lhs->obj->name, init->lhs->obj->len);
+            name[init->lhs->obj->len] = '\0';
+            printf("  .quad %s\n", name);
+        } else {
+            error_codegen();
         }
         break;
     }
@@ -53,11 +60,17 @@ void codegen_gvar_init(Type *type, Node *init) {
         if (init->kind == NdInit) {
             Node *node = init->body;
             for (int i = 0;i < type->array_size; i++) {
-                codegen_gvar_init(type->ptr_to, node);
-                node = node->next;
+                if (node) {
+                    codegen_gvar_init(type->ptr_to, node);
+                    node = node->next;
+                } else {
+                    codegen_gvar_init(type->ptr_to, zeros_like(type->ptr_to));
+                }
             }
         } else if (init->kind == NdGvar) {
             codegen_gvar_init(type, init->obj->init);
+        } else {
+            error_codegen();
         }
         break;
         }
