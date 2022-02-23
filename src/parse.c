@@ -3,6 +3,24 @@
 Obj *locals;
 Obj *globals;
 
+// find obj
+Obj *find_lvar(Token *token, bool should_exist);
+Obj *find_gvar(Token *token, bool should_exist);
+Obj *find_obj(Token *token, bool should_exist);
+
+// new obj
+Obj *new_lvar(Token *token, Type *type);
+Obj *new_gvar(Token *token, Type *type);
+Obj *new_fun(Token *token, Type *return_ty, Obj *params);
+Obj *new_string(Token *token);
+
+// new node
+Node *new_node_num(int val);
+Node *new_node_lvar(Obj *obj);
+Node *new_node_gvar(Obj *obj);
+Node *new_node_obj(Obj *obj);
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+
 // expr
 Node *argument(Token **token);
 Node *primary(Token **token);
@@ -94,14 +112,6 @@ void expect_keyword(Token **token, char *keyword) {
     return;
 }
 
-Node *new_node_num(int val) {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = NdNum;
-    node->val  = val;
-    return node;
-}
-
-
 Obj *find_lvar(Token *token, bool should_exist) {
     char *name = token->str;
     int len = token->len;
@@ -157,7 +167,6 @@ Obj *new_lvar(Token *token, Type *type) {
     obj->len = token->len;
     obj->name = token->str;
     obj->type = type;
-    obj->is_string = false;
     obj->is_function = false;
     obj->is_global = false;
     locals = obj;
@@ -170,7 +179,6 @@ Obj *new_gvar(Token *token, Type *type) {
     obj->len = token->len;
     obj->name = token->str;
     obj->type = type;
-    obj->is_string = false;
     obj->is_function = false;
     obj->is_global = true;
     globals = obj;
@@ -184,7 +192,6 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params) {
     fn->name = token->str;
     fn->return_type = return_ty;
     fn->args = params;
-    fn->is_string = false;
     fn->is_function = true;
     globals = fn;
     return fn;
@@ -204,14 +211,30 @@ Obj *new_string(Token *token) {
     obj->name = unique_str_name();
     obj->len = strlen(obj->name);
     obj->type = new_type_array(new_type(TyChar), token->len - 1);
-    obj->is_string = true;
-    obj->str = token->str;
     obj->is_function = false;
     obj->is_global = true;
     globals = obj;
+
+    Node head;
+    Node *cur = &head;
+    for (int i = 0;i < token->len - 2; i++) {
+        cur->next = new_node_num(token->str[i + 1]);
+        cur = cur->next;
+    }
+    cur->next = new_node_num(0);
+    cur = cur->next;
+
+    obj->init = new_node(NdInit, NULL, NULL);
+    obj->init->body = head.next;
     return obj;
 }
  
+Node *new_node_num(int val) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = NdNum;
+    node->val  = val;
+    return node;
+}
 
 Node *new_node_lvar(Obj *obj) {
     Node *node = calloc(1, sizeof(Node));
@@ -689,18 +712,8 @@ Node *init_assign(Node *var, Node *init_value) {
         // char *s = "abc"; -> "abc" Global variable
         // char s[4] = "abc"; -> "abc" initial variable
         // In later case, I have to initialize s by "abc"
-        if (var->type->kind == TyArray && init_value->obj->is_string) {
-            Node head;
-            Node *cur = &head;
-            for (int i = 0;i < init_value->obj->type->array_size - 1; i++) {
-                cur->next = new_node_num(init_value->obj->str[i + 1]);
-                cur = cur->next;
-            }
-            cur->next = new_node_num(0);
-            cur = cur->next;
-            Node *node = new_node(NdInit, NULL, NULL);
-            node->body = head.next;
-            return init_assign(var, node);
+        if (var->type->kind == TyArray && var->type->ptr_to->kind == TyChar) {
+            return init_assign(var, init_value->obj->init);
         }
     }
     default : 
@@ -758,7 +771,7 @@ void allocate_stack_offset(Obj *func) {
 }
 
 // definition = declspec declarator "{" compound_stmt 
-//              declspec declarator ";"
+//              declspec declarator "=" initializer ";"
 void def(Token **token) {
     Type *type = declspec(token);
     Obj *fn = declarator(token, type, true);
@@ -777,6 +790,11 @@ void def(Token **token) {
         fn->locals = locals;
         allocate_stack_offset(fn);
     } else {
+        if (consume(token, "=")) {
+            fn->init = initializer(token);
+        } else {
+            fn->init = zeros_like(fn->type);
+        }
         expect(token, ";");
         // global variable initialization
     }

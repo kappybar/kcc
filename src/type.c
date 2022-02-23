@@ -39,6 +39,26 @@ Type *find_return_type(char *func_name, int func_name_len) {
     return NULL;
 }
 
+Node *zeros_like(Type *type) {
+    switch (type->kind) {
+    case TyInt :
+    case TyChar :
+    case TyPtr :
+        return new_node_num(0);
+    case TyArray : {
+        Node head;
+        Node *cur = &head;
+        for (int i = 0;i < type->array_size; i++) {
+            cur->next = zeros_like(type->ptr_to);
+            cur = cur->next;
+        }
+        Node *node = new_node(NdInit, NULL, NULL);
+        node->body = head.next;
+        return node;
+    }
+    }
+}
+
 int alignment(Type *ty) {
     switch (ty->kind) {
     case TyInt:

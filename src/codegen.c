@@ -3,6 +3,7 @@
 void stack_pop(char *fmt, ...);
 void stack_push(char *fmt, ...);
 void gen_addr(Node *node);
+void codegen_gvar_init(Type *type, Node *init);
 void codegen_gvar(Obj *obj);
 void codegen_expr(Node *node);
 void codegen_stmt(Node *node);
@@ -29,20 +30,47 @@ void stack_push(char *fmt, ...) {
     return;
 }
 
+void codegen_gvar_init(Type *type, Node *init) {
+    switch (type->kind) {
+    case TyChar :
+        printf("  .byte %d\n", init->val);
+        break;
+    case TyInt :
+        printf("  .long %d\n", init->val);
+        break;
+    case TyPtr : {
+        if (init->kind == NdNum) {
+            printf("  .quad %d\n", init->val);
+        } else if (init->kind == NdGvar) {
+            char name[init->obj->len + 1];
+            strncpy(name, init->obj->name, init->obj->len);
+            name[init->obj->len] = '\0';
+            printf("  .quad %s\n", name);
+        }
+        break;
+    }
+    case TyArray : {
+        if (init->kind == NdInit) {
+            Node *node = init->body;
+            for (int i = 0;i < type->array_size; i++) {
+                codegen_gvar_init(type->ptr_to, node);
+                node = node->next;
+            }
+        } else if (init->kind == NdGvar) {
+            codegen_gvar_init(type, init->obj->init);
+        }
+        break;
+        }
+    }
+}
+
 void codegen_gvar(Obj *obj) {
     char s[100];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
     printf(".data\n");
     printf("%s:\n", s);
-    if (obj->is_string) {
-        char str[100];
-        strncpy(str, obj->str, obj->type->array_size + 1);
-        str[obj->type->array_size + 1] = '\0';
-        printf("  .string %s\n", str);
-    } else {
-        printf("  .zero %d\n", sizeof_type(obj->type));
-    }
+    codegen_gvar_init(obj->type, obj->init);
     return;
 }
 

@@ -91,7 +91,8 @@ void display_gvar(Obj *obj) {
     s[obj->len] = '\0';
     fprintf(stderr, "(%s, global var", s);
     display_type(obj->type);
-    fprintf(stderr, ")");
+    fprintf(stderr, ")\n Init-Val : \n");
+    display_node(obj->init, 2);
     return;
 }
 

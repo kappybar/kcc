@@ -63,6 +63,7 @@ Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
 Type *new_type_array(Type *ty, size_t size);
 Type *copy_type(Type *ty);
+Node *zeros_like(Type *type);
 int alignment(Type *ty);
 bool is_integer(Type *ty);
 bool is_pointer(Type *ty);
@@ -82,8 +83,8 @@ struct Obj {
     int len;
     int offset;
     bool is_global;
-    bool is_string;
-    char *str;
+
+    Node *init;
 
     // Function
     bool is_function;
@@ -148,6 +149,10 @@ bool equal(Token *token, char *s);
 bool at_eof(Token *token);
 bool consume(Token **token, char *op);
 int expect_number(Token **token);
+// new node
+Node *new_node_num(int val);
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+// parse
 Obj *parse(Token **token);
 
 //
