@@ -140,3 +140,6 @@ assert 7 'int main() { return "\ak\b"[0]; }'
 assert 107 'int main() { return "\ak\b"[1]; }'
 assert 0 'int main() { return "\0"[0]; }'
 assert 0 "int main() { return '\0'; }"
+assert 1 "int main() { // return 3;
+                          return 1; }"
+assert 1 "int main() {/* return 3;*/ return 1;}"

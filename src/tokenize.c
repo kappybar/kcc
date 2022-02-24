@@ -159,6 +159,37 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // line comment
+        if (*p == '/' && *(p + 1) == '/') {
+            while(*p) {
+                if (*p == '\n') {
+                    break;
+                }
+                p++;
+            } 
+            if (!(*p)) {
+                error_tokenize(p);
+            }
+            p++;
+            continue;
+        }
+
+        // block comment
+        if (*p == '/' && *(p + 1) == '*') {
+            p += 2;
+            while(*p) {
+                if (*p == '*' && *(p + 1) == '/') {
+                    break;
+                }
+                p++;
+            }
+            if (!(*p)) {
+                error_tokenize(p);
+            }
+            p += 2;
+            continue;
+        }
+
         // reserved
         int len = isreserved(p);
         if (len > 0) {
