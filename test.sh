@@ -138,3 +138,5 @@ assert 13 "int main() { return '\r'; }"
 assert 27 "int main() { return '\e'; }"
 assert 7 'int main() { return "\ak\b"[0]; }'
 assert 107 'int main() { return "\ak\b"[1]; }'
+assert 0 'int main() { return "\0"[0]; }'
+assert 0 "int main() { return '\0'; }"

@@ -51,6 +51,7 @@ char read_escaped_char(char *p) {
     case 'f': return '\f';
     case 'r': return '\r';
     case 'e': return 27;
+    case '0': return 0;
     default : return *p;
     }
 }
