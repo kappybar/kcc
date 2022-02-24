@@ -143,3 +143,6 @@ assert 0 "int main() { return '\0'; }"
 assert 1 "int main() { // return 3;
                           return 1; }"
 assert 1 "int main() {/* return 3;*/ return 1;}"
+assert 2 "int main() {int b = 2;{int a=b;} return b; }"
+assert 2 "int main() {int a = 2;{int a;a = 3;} return a; }"
+assert 2 "int main() {int a = 2;{int a;a = 3;{int a;a = 4;}} return a; }"

@@ -11,6 +11,7 @@
 typedef struct Token Token;
 typedef struct Type Type;
 typedef struct Obj Obj;
+typedef struct Scope Scope;
 typedef struct Node Node;
 
 
@@ -77,6 +78,11 @@ void add_type(Node *node);
 //
 
 
+struct Scope {
+    Obj *objs;
+    Scope *prev;
+};
+
 struct Obj {
     Obj *next;
     Type *type;
@@ -90,13 +96,14 @@ struct Obj {
     // Function
     bool is_function;
     Node *body;
-    Obj *locals;
+    Scope *locals;
     Obj *args;
     Type *return_type;
     int stack_size;
 };
 
-extern Obj *locals;
+extern Scope *locals;
+extern Scope *fun_locals;
 extern Obj *globals;
 
 typedef enum {

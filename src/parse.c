@@ -1,11 +1,16 @@
 #include "kcc.h"
 
-Obj *locals;
+Scope *locals = &(Scope){};
+Scope *fun_locals = &(Scope){};
 Obj *globals;
+
+// new scope
+Scope *next_locals();
+void prev_locals(Scope *new_locals);
 
 // find obj
 Obj *find_lvar(Token *token, bool should_exist);
-Obj *find_gvar(Token *token, bool should_exist);
+Obj *find_gvar(Token *token);
 Obj *find_obj(Token *token, bool should_exist);
 
 // new obj
@@ -112,18 +117,37 @@ void expect_keyword(Token **token, char *keyword) {
     return;
 }
 
+Scope *next_locals() {
+    Scope *new_locals = calloc(1, sizeof(Scope));
+    new_locals->prev = locals;
+    locals = new_locals;
+    return new_locals;
+}
+
+void prev_locals(Scope *new_locals) {
+    locals = new_locals->prev;
+    new_locals->prev = fun_locals;
+    fun_locals = new_locals;
+    return;
+}
+
 Obj *find_lvar(Token *token, bool should_exist) {
     char *name = token->str;
     int len = token->len;
-    for (Obj *obj = locals;obj; obj = obj->next) {
-        if (len == obj->len && strncmp(name, obj->name, len) == 0) {
-            return obj;
+    for (Scope *scope = locals;scope; scope = scope->prev) {
+        for (Obj *obj = scope->objs;obj; obj = obj->next  ) {
+            if (len == obj->len && strncmp(name, obj->name, len) == 0) {
+                return obj;
+            }
+        }
+        if (!should_exist) {
+            return NULL;
         }
     }
     return NULL;
 }
 
-Obj *find_gvar(Token *token, bool should_exist) {
+Obj *find_gvar(Token *token) {
     char *name = token->str;
     int len = token->len;
     for (Obj *obj = globals;obj; obj = obj->next) {
@@ -140,7 +164,7 @@ Obj *find_obj(Token *token, bool should_exist) {
         if (should_exist) return lvar;
         else error_parse(token, "redeclaration\n");
     }
-    Obj *gvar = find_gvar(token, should_exist);
+    Obj *gvar = find_gvar(token);
     if (gvar) {
         if (should_exist) return gvar;
         else error_parse(token, "redeclaration\n");
@@ -149,27 +173,28 @@ Obj *find_obj(Token *token, bool should_exist) {
     return NULL;
 }
 
-void locals_reverse(void) {
+void params_reverse(void) {
+    Obj *params = locals->objs;
     Obj *next = NULL;
     Obj *temp = NULL;
-    for (Obj *obj = locals;obj;obj = temp) {
+    for (Obj *obj = params;obj;obj = temp) {
         temp = obj->next;
         obj->next = next;
         next = obj;
     }
-    locals = next;
+    locals->objs = next;
     return;
 }
 
 Obj *new_lvar(Token *token, Type *type) {
     Obj *obj = calloc(1, sizeof(Obj));
-    obj->next = locals;
+    obj->next = locals->objs;
     obj->len = token->len;
     obj->name = token->str;
     obj->type = type;
     obj->is_function = false;
     obj->is_global = false;
-    locals = obj;
+    locals->objs = obj;
     return obj;
 }
 
@@ -308,7 +333,7 @@ Node *primary(Token **token) {
             return node;
         }
         // variable
-        Obj *obj = find_obj(token_ident, true); // should_exist = false
+        Obj *obj = find_obj(token_ident, true); // should_exist = true
         Node *node = new_node_obj(obj);
         add_type(node);
         if (consume(token, "[")) {
@@ -591,6 +616,9 @@ Node *compound_stmt(Token **token) {
     head.next = NULL;
     Node *cur = &head;
 
+    // block scope
+    Scope *new_locals = next_locals();
+
     while(!consume(token, "}")) {
         if (equal(*token, "int") || equal(*token, "char")) {
             cur->next = declaration(token, false);
@@ -600,6 +628,9 @@ Node *compound_stmt(Token **token) {
             cur = cur->next;
         }
     }
+
+    // block scope
+    prev_locals(new_locals);
 
     return head.next;
 }
@@ -614,15 +645,15 @@ Obj *params(Token **token) {
         declarator(token, ty, false);
     }
 
-    for (Obj *arg = locals;arg;arg = arg->next) {
+    for (Obj *arg = locals->objs;arg;arg = arg->next) {
         // implicit array to ptr type coversion
         if (arg->type->kind == TyArray) {
             arg->type->kind = TyPtr;
         }
     }
 
-    locals_reverse();
-    return locals;
+    params_reverse();
+    return locals->objs;
 }
 
 // declspec = "int" | "char"
@@ -766,11 +797,13 @@ Node *declaration(Token **token, bool is_global) {
 
 void allocate_stack_offset(Obj *func) {
     int stack_size = 0;
-    for (Obj *obj = func->locals;obj;obj = obj->next) {
-        int size = sizeof_type(obj->type);
-        stack_size = align_to(stack_size, alignment(obj->type));
-        stack_size += size;
-        obj->offset = stack_size;
+    for (Scope *scope = func->locals;scope;scope = scope->prev) {
+        for (Obj *obj = scope->objs;obj;obj = obj->next) {
+            int size = sizeof_type(obj->type);
+            stack_size = align_to(stack_size, alignment(obj->type));
+            stack_size += size;
+            obj->offset = stack_size;
+        }
     }
     func->stack_size = align_to(stack_size, 16);
     return;
@@ -792,8 +825,11 @@ void def(Token **token) {
             add_type(cur);
         }
 
+        locals->prev = fun_locals;
+        fun_locals = locals;
+
         fn->body = node;
-        fn->locals = locals;
+        fn->locals = fun_locals;
         allocate_stack_offset(fn);
     } else {
         if (consume(token, "=")) {
@@ -806,7 +842,8 @@ void def(Token **token) {
     }
 
     
-    locals = NULL;
+    locals = &(Scope){};
+    fun_locals = &(Scope){};
     return;
 }
 
