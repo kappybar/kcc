@@ -210,15 +210,15 @@ Obj *new_string(Token *token) {
     obj->next = globals;
     obj->name = unique_str_name();
     obj->len = strlen(obj->name);
-    obj->type = new_type_array(new_type(TyChar), token->len - 1);
+    obj->type = token->type;// new_type_array(new_type(TyChar), token->len + 1);
     obj->is_function = false;
     obj->is_global = true;
     globals = obj;
 
     Node head;
     Node *cur = &head;
-    for (int i = 0;i < token->len - 2; i++) {
-        cur->next = new_node_num(token->str[i + 1]);
+    for (int i = 0;i < obj->type->array_size - 1; i++) {
+        cur->next = new_node_num(token->str[i]);
         cur = cur->next;
     }
     cur->next = new_node_num(0);

@@ -33,6 +33,7 @@ struct Token {
     Token *next;   // 次のToken
     char *str;     // このTokenの文字列
     int len;       // このTokenの長さ
+    Type *type;
 
     int val;       // kindがTkNumであるときの数字 
 };

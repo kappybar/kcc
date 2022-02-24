@@ -41,6 +41,77 @@ void convert_keyword(Token *token) {
     return;
 }
 
+char read_escaped_char(char *p) {
+    switch (*p) {
+    case 'a': return '\a';
+    case 'b': return '\b';
+    case 't': return '\t';
+    case 'n': return '\n';
+    case 'v': return '\v';
+    case 'f': return '\f';
+    case 'r': return '\r';
+    case 'e': return 27;
+    default : return *p;
+    }
+}
+
+char *read_string_end(char *start) {
+    char *p = start+1;
+    while ((*p) != '"') {
+        if (*p == '\0' || *p == '\n') {
+            error_tokenize(p);
+        }
+        if (*p == '\\') {
+            p++;
+        }
+        p++;
+    }
+    return p;
+}
+
+Token *read_string(Token *cur, char *p) {
+    char *start = p;
+    char *end = read_string_end(start);
+    char *buf = calloc(end - start, sizeof(char));
+    int len = 0;
+
+    for (p = start+1;p < end;) {
+        if (*p == '\\') {
+            buf[len++] = read_escaped_char(p + 1);
+            p += 2;
+        } else {
+            buf[len++] = *p++;
+        }
+    }
+
+    cur = new_token(TkString, cur, start);
+    cur->str = buf;
+    cur->type = new_type_array(new_type(TyChar), len + 1);
+    cur->len = end - start + 1;
+    // printf("%d", cur->len);
+    return cur;
+}
+
+Token *read_char(Token *cur, char *p) {
+    if (*(p + 1) == '\\') {
+        cur = new_token(TkNum, cur, p);
+        cur->val = read_escaped_char(p + 2);
+        cur->len = 4;
+        p += 3;
+    } else {
+        cur = new_token(TkNum, cur, p);
+        cur->val = *(p + 1);
+        cur->len = 3;
+        p += 2;
+    } 
+
+    if (*p != '\'') {
+        error_tokenize(p);
+    }
+
+    return cur;
+}
+
 // curに新しいTokenを繋げる。
 // head -> ... -> cur
 // head -> ... -> cur -> token　になる。
@@ -75,28 +146,15 @@ Token *tokenize(char *p) {
 
         // char literal 'a'
         if (*p == '\'') {
-            if (*(p + 2) == '\'') {
-                cur = new_token(TkNum, cur, p);
-                cur->val = *(p + 1);
-                cur->len = 3;
-                p += 3;
-            } else {
-                error_tokenize(p);
-            }
+            cur = read_char(cur, p);
+            p += cur->len;
+            continue;
         }
 
         // string literal "a"
         if (*p == '"') {
-            char *start = p++;
-            while ((*p) != '"') {
-                if (*p == '\0' || *p == '\n') {
-                    error_tokenize(p);
-                }
-                p++;
-            }
-            p++;
-            cur = new_token(TkString, cur, start);
-            cur->len = p - start;
+            cur = read_string(cur, p);
+            p += cur->len;
             continue;
         }
 
