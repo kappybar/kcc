@@ -63,7 +63,6 @@ bool at_eof(Token *token) {
     return token->kind == TkEof;
 }
 
-// tokenの種類が数字なら、その値を返し、トークンを一つ先に進める。
 int expect_number(Token **token) {
     if ((*token)->kind != TkNum) error_parse(*token, "expect number\n");
     int val = (*token)->val;
@@ -78,7 +77,6 @@ Token *consume_string(Token **token) {
     return token_return;
 }
 
-// tokenがopと一致していたらtrueを返し、トークンを一つ進める。
 bool consume(Token **token, char *op) {
     if ((*token)->kind != TkReserved || !equal(*token, op)) return false;
     *token = (*token)->next;
@@ -228,13 +226,10 @@ char *unique_str_name() {
 
 Obj *new_string(Token *token) {
     Obj *obj = calloc(1, sizeof(Obj));
-    obj->next = globals;
     obj->name = unique_str_name();
     obj->len = strlen(obj->name);
     obj->type = token->type;
     obj->is_function = false;
-    obj->is_global = true;
-    globals = obj;
 
     Node head;
     Node *cur = &head;
@@ -366,6 +361,7 @@ Node *primary(Token **token) {
     Token *token_string = consume_string(token);
     if (token_string) {
         Obj *obj = new_string(token_string);
+        add_gvar(obj);
         Node *node = new_node_obj(obj);
         return node;
     }

@@ -32,12 +32,12 @@ typedef enum {
 
 struct Token {
     TokenKind kind;
-    Token *next;   // 次のToken
-    char *str;     // このTokenの文字列
-    int len;       // このTokenの長さ
+    Token *next;   
+    char *str;     
+    int len;       
     Type *type;
 
-    int val;       // kindがTkNumであるときの数字 
+    int val;       
 };
 
 Token *new_token(TokenKind kind, Token *cur, char *str);
@@ -157,8 +157,8 @@ struct Node {
 
     Node *body;
 
-    int val;   // kindがNdNumのとき、その値
-    Obj *obj;  // 
+    int val;   
+    Obj *obj;   
     Type *type;
 
     char *func_name;
