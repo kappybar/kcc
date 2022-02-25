@@ -1,5 +1,6 @@
 #include "kcc.h"
 
+Struct *user_structs;
 Scope *locals = &(Scope){};
 Scope *fun_locals = &(Scope){};
 Obj *globals;
@@ -47,9 +48,13 @@ Node *compound_stmt(Token **token);
 // declare
 Obj *params(Token **token);
 Type *declspec(Token **token);
-Obj *direct_decl(Token **token, Type *type, bool is_global);
-Obj *declarator(Token **token, Type *type, bool is_global);
+// Obj *direct_decl(Token **token, Type *type, bool is_global);
+Obj *direct_decl(Token **token, Type *type, bool is_global, bool is_member);
+// Obj *declarator(Token **token, Type *type, bool is_global);
+Obj *declarator(Token **token, Type *type, bool is_global, bool is_member);
 Node *declaration(Token **token, bool is_global);
+Struct *struct_declaration(Token **token, Token *token_ident);
+Struct *struct_def(Token **token);
 void def(Token **token);
 
 bool equal(Token *token, char *s) {
@@ -186,6 +191,15 @@ void params_reverse(void) {
     return;
 }
 
+Struct *find_struct(Token *token) {
+    for (Struct *s = user_structs;s;s = s->next) {
+        if (s->name_len == token->len && strncmp(s->name, token->str, token->len) == 0 ) {
+            return s;
+        }
+    }
+    return NULL;
+}
+
 Obj *new_lvar(Token *token, Type *type) {
     Obj *obj = calloc(1, sizeof(Obj));
     obj->next = locals->objs;
@@ -207,6 +221,14 @@ Obj *new_gvar(Token *token, Type *type) {
     obj->is_function = false;
     obj->is_global = true;
     globals = obj;
+    return obj;
+}
+
+Obj *new_obj(Token *token, Type *type) {
+    Obj *obj = calloc(1, sizeof(Obj));
+    obj->name = token->str;
+    obj->len = token->len;
+    obj->type = type;
     return obj;
 }
 
@@ -252,6 +274,29 @@ Obj *new_string(Token *token) {
     obj->init = new_node(NdInit, NULL, NULL);
     obj->init->body = head.next;
     return obj;
+}
+
+Struct *new_struct(Token *token_ident, Obj *member) {
+    Struct *new_struct_ = calloc(1, sizeof(Struct));
+    new_struct_->member = member;
+    new_struct_->name = token_ident->str;
+    new_struct_->name_len = token_ident->len;
+
+    int offset = 0;
+    for (Obj *obj = new_struct_->member;obj;obj = obj->next) {
+        int align = alignment(obj->type);
+        offset = align_to(offset, align);
+        obj->offset = offset;
+        offset += sizeof_type(obj->type);
+        if (new_struct_->align < align) {
+            new_struct_->align = align;
+        }
+    }
+    new_struct_->size = offset;
+
+    new_struct_->next = user_structs;
+    user_structs = new_struct_;
+    return new_struct_;
 }
  
 Node *new_node_num(int val) {
@@ -620,7 +665,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (equal(*token, "int") || equal(*token, "char")) {
+        if (equal(*token, "int") || equal(*token, "char") || equal(*token, "struct")) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -638,11 +683,11 @@ Node *compound_stmt(Token **token) {
 // params = declspce declarator ("," declspec declarator) * 
 Obj *params(Token **token) {
     Type *type = declspec(token);
-    declarator(token, type, false);
+    declarator(token, type, false, false);
 
     while (consume(token, ",")) {
         Type *ty = declspec(token);
-        declarator(token, ty, false);
+        declarator(token, ty, false, false);
     }
 
     for (Obj *arg = locals->objs;arg;arg = arg->next) {
@@ -656,19 +701,31 @@ Obj *params(Token **token) {
     return locals->objs;
 }
 
-// declspec = "int" | "char"
+// declspec = "int" | "char" | "struct" ident ("{" struct_declaration "}")? 
 Type *declspec(Token **token) {
     if (consume_keyword(token, "int")) {
         return new_type(TyInt);
+    } 
+    if (consume_keyword(token, "char")) {
+        return new_type(TyChar);
     }
-    expect_keyword(token, "char");
-    return new_type(TyChar);
+    expect_keyword(token, "struct");
+    Token *token_ident = expect_ident(token);
+    if (consume(token, "{")) {
+        struct_declaration(token, token_ident);
+        expect(token, "}");
+    }
+    Struct *s = find_struct(token_ident);
+    if (!s) {
+        error_parse(*token, "undefined type");
+    } 
+    return new_type_struct(s);
 }
 
 // direct_decl =   ident
 //               | ident ("[" number "]")* 
 //               | ident ("(" params? ")")?
-Obj *direct_decl(Token **token, Type *type, bool is_global) {
+Obj *direct_decl(Token **token, Type *type, bool is_global, bool is_member) {
     Token *token_ident = expect_ident(token);
 
     // function
@@ -680,6 +737,7 @@ Obj *direct_decl(Token **token, Type *type, bool is_global) {
         }
         Obj *fn = new_fun(token_ident, type, param);
         assert(is_global); // only glbal function defnition & I cannot implement function ptr
+        assert(!is_member);
         return fn;
     }
 
@@ -691,7 +749,9 @@ Obj *direct_decl(Token **token, Type *type, bool is_global) {
         expect(token, "]");
     }
 
-    if (is_global) {
+    if (is_member) {
+        return new_obj(token_ident, type);
+    } else if (is_global) {
         return new_gvar(token_ident, type);
     } else {
         return new_lvar(token_ident, type); 
@@ -759,11 +819,11 @@ Node *init_assign(Node *var, Node *init_value) {
 }
 
 // declarator = "*"* direct_decl
-Obj *declarator(Token **token, Type *type, bool is_global) {
+Obj *declarator(Token **token, Type *type, bool is_global, bool is_member) {
     while (consume(token, "*")) {
         type = new_type_ptr(type);
     }
-    return direct_decl(token, type, is_global);
+    return direct_decl(token, type, is_global, is_member);
 }
 
 // declaration = declspec declarator ("=" initializer)? ("," declarator ("=" initializer)? )* ";"
@@ -779,7 +839,7 @@ Node *declaration(Token **token, bool is_global) {
             expect(token, ",");
         }
 
-        Node *var = new_node_obj( declarator(token, base_type, is_global) );
+        Node *var = new_node_obj( declarator(token, base_type, is_global, false) );
         if (consume(token, "=")) {
             cur->next = init_assign(var, initializer(token));
             cur = cur->next;
@@ -793,6 +853,36 @@ Node *declaration(Token **token, bool is_global) {
     Node *node = new_node(NdBlock, NULL, NULL);
     node->body = head.next;
     return node;
+}
+
+// struct_declaration = (declspce declarator ";")* 
+Struct *struct_declaration(Token **token, Token *token_ident) {
+    Obj head;
+    Obj *cur = &head;
+
+    while (1) {
+        if (equal(*token, "int") || equal(*token, "char") || equal(*token, "struct")) {
+            Type *type = declspec(token);
+            cur->next = declarator(token, type, true, true);
+            cur = cur->next;
+            expect(token, ";");
+            continue;
+        }
+        break;
+    }
+
+    
+    return new_struct(token_ident, head.next);
+}
+
+// struct_def = "struct" ident "{" struct_declaration "}"
+Struct *struct_def(Token **token) {
+    expect_keyword(token, "struct");
+    Token *token_ident = expect_ident(token);
+    expect(token, "{");
+    Struct *new_struct = struct_declaration(token, token_ident);
+    expect(token, "}");
+    return new_struct;
 }
 
 void allocate_stack_offset(Obj *func) {
@@ -810,10 +900,14 @@ void allocate_stack_offset(Obj *func) {
 }
 
 // definition = declspec declarator "{" compound_stmt 
-//              declspec declarator "=" initializer ";"
+//              declspec declarator ("=" initializer)? ";"
+//              declspec ";" <- struct definition
 void def(Token **token) {
     Type *type = declspec(token);
-    Obj *fn = declarator(token, type, true);
+    if (consume(token, ";")) {
+        return;
+    }
+    Obj *fn = declarator(token, type, true, false);
 
     if (fn->is_function) {
         // body
@@ -832,13 +926,13 @@ void def(Token **token) {
         fn->locals = fun_locals;
         allocate_stack_offset(fn);
     } else {
+        // global variable initialization
         if (consume(token, "=")) {
             fn->init = initializer(token);
         } else {
             fn->init = zeros_like(fn->type);
         }
         expect(token, ";");
-        // global variable initialization
     }
 
     
@@ -847,7 +941,7 @@ void def(Token **token) {
     return;
 }
 
-// program = func_def *
+// program = def *
 Obj *program(Token **token) {
 
     while (!at_eof(*token)) {

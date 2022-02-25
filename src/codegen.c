@@ -74,6 +74,9 @@ void codegen_gvar_init(Type *type, Node *init) {
         }
         break;
         }
+    case TyStruct : {
+        error_type("THIS IS NOT IMPLEMENNTED");
+    }
     }
 }
 

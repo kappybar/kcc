@@ -66,6 +66,10 @@ void display_type(Type *type) {
             strncpy(s + width, "ptr to ", 7);
             width += 7;
             break;
+        case TyStruct:
+            strncpy(s + width, "struct ", 7);
+            width += 7;
+            break;
         default:
             break;
         }

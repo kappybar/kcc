@@ -10,6 +10,7 @@
 
 typedef struct Token Token;
 typedef struct Type Type;
+typedef struct Struct Struct;
 typedef struct Obj Obj;
 typedef struct Scope Scope;
 typedef struct Node Node;
@@ -51,6 +52,7 @@ typedef enum {
     TyChar,
     TyPtr,
     TyArray,
+    TyStruct,
 } TypeKind;
 
 
@@ -59,11 +61,22 @@ struct Type {
     Type *ptr_to;
 
     size_t array_size;
+    Struct *type_struct;
+};
+
+struct Struct {
+    char *name;
+    int name_len;
+    Struct *next;
+    Obj *member;
+    int align;
+    int size;
 };
 
 Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
 Type *new_type_array(Type *ty, size_t size);
+Type *new_type_struct(Struct *s);
 Type *copy_type(Type *ty);
 Node *zeros_like(Type *type);
 int alignment(Type *ty);

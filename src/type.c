@@ -21,6 +21,13 @@ Type *new_type_array(Type *ty, size_t size) {
     return type;
 }
 
+Type *new_type_struct(Struct *s) {
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = TyStruct;
+    type->type_struct = s;
+    return type;
+}
+
 Type *copy_type(Type *ty) {
     Type *type = calloc(1, sizeof(Type));
     type->kind = ty->kind;
@@ -56,6 +63,10 @@ Node *zeros_like(Type *type) {
         node->body = head.next;
         return node;
     }
+    case TyStruct : {
+        error_type("THIS IS NOT IMPLEMENTED");
+        return NULL;
+    }
     }
 }
 
@@ -69,6 +80,8 @@ int alignment(Type *ty) {
         return 4;
     case TyArray:
         return alignment(ty->ptr_to);
+    case TyStruct:
+        return ty->type_struct->align;
     }
 }
 
@@ -82,6 +95,8 @@ int sizeof_type(Type *ty) {
         return 8;
     case TyArray:
         return ty->array_size * sizeof_type(ty->ptr_to);
+    case TyStruct:
+        return ty->type_struct->size;
     }
 }
 
