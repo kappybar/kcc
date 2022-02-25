@@ -198,6 +198,7 @@ void error_type(char *fmt, ...);
 // debug.c
 //
 
+void display_obj(Obj *obj);
 void display_token(Token *token);
 void display_node(Node *node, int indent);
 void display_function(Obj *func);
