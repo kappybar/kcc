@@ -154,3 +154,6 @@ assert 7 "struct x {int y;int z;}; int main() {struct x w; w.y = 4; w.z = 3; ret
 assert 6 "struct x {int y;char z;char w;}; int main() { struct x k;k.y = 1;k.z = 2; k.w = 3; return k.y + k.z + k.w;}"
 assert 1 "struct s1 {int m1;char m2;}; struct s2 {struct s1 m1;int m2;char m3;};  int main() { struct s2 x;x.m1.m1 = 1; return x.m1.m1; }"
 assert 1 "struct s1 {int m1;char m2;}; struct s2 {struct s1 m1;int m2;char m3;};  int main() { struct s2 x;x.m2 = 1; return x.m2; }"
+assert 2 "struct s1 {int m1;char m2;}; int main() { struct s1 x, *y = &x; y->m1 = 2; return x.m1; }"
+assert 2 "struct s1 {int m1;char m2;}; struct s2 {struct s1 m1; int m2;char m2;};  int main() { struct s2 x, *y = &x; y->m1.m1 = 2; return y->m1.m1; }"
+assert 2 "struct s1 {int m1;char m2;}; struct s2 {struct s1 *m1; int m2;char m2;};  int main() { struct s1 x; struct s2 y, *z = &y; y.m1 = &x; z->m1->m1 = 2; return z->m1->m1; }"

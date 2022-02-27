@@ -335,6 +335,7 @@ Node *argument(Token **token) {
 //           | ident "(" argument ")"
 //           | ident "[" expr "]"
 //           | ident "." ident
+//           | ident "->" ident
 //           | ident 
 //           | string
 Node *primary(Token **token) {
@@ -365,6 +366,15 @@ Node *primary(Token **token) {
             node->member = find_member(obj->type->type_struct, member);
             return node;
         }
+        // arrow
+        if (consume(token, "->")) {
+            Token *member = expect_ident(token);
+            Obj *obj = find_obj(token_ident, true); // should_exist = true
+            Node *lhs = new_node(NdDeref, new_node_obj(obj), NULL);
+            Node *node = new_node(NdMember, lhs, NULL);
+            node->member = find_member(obj->type->ptr_to->type_struct, member);
+            return node;
+        }
         // variable
         Obj *obj = find_obj(token_ident, true); // should_exist = true
         Node *node = new_node_obj(obj);
@@ -388,7 +398,7 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// postfix = primary ( "[" expr "]" | "(" argument ")" | "." ident )*
+// postfix = primary ( "[" expr "]" | "(" argument ")" | "." ident | "->" ident )*
 Node *postfix(Token **token) {
     Node *node = primary(token);
     while (1) {
@@ -400,6 +410,15 @@ Node *postfix(Token **token) {
             continue;
         }
         if (consume(token, ".")) {
+            add_type(node);
+            Struct *st = node->type->type_struct;
+            Token *member = expect_ident(token);
+            node = new_node(NdMember, node, NULL);
+            node->member = find_member(st, member);
+            continue;
+        }
+        if (consume(token, "->")) {
+            node = new_node(NdDeref, node, NULL);
             add_type(node);
             Struct *st = node->type->type_struct;
             Token *member = expect_ident(token);

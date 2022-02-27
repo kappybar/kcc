@@ -5,7 +5,7 @@ bool startwith(char *p, char *q) {
 }
 
 int isreserved(char *p) {
-    if (startwith(p, "<=") || startwith(p, ">=") || startwith(p, "==") || startwith(p, "!=") ) {
+    if (startwith(p, "<=") || startwith(p, ">=") || startwith(p, "==") || startwith(p, "!=") || startwith(p, "->") ) {
         return 2;
     }
     if (ispunct(*p)) {
