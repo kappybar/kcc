@@ -286,7 +286,16 @@ void display_node(Node *node, int indent) {
             display_node(nd, indent + 1);
         }
         break;
-    }
+        }
+    case NdMember : {
+        fprintf(stderr, "Member");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_node(node->lhs, indent + 1);
+        display_space(indent + 1);
+        display_obj(node->member);
+        break;
+        }
     }
     
     return;

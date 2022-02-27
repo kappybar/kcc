@@ -249,6 +249,11 @@ void add_type(Node *node) {
             add_type(nd);
         }
         break;
+    case NdMember:
+        add_type(node->lhs);
+        node->type = node->member->type;
+        break;
     }
+        
     return;
 }

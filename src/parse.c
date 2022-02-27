@@ -183,6 +183,16 @@ Struct *find_struct(Token *token) {
     return NULL;
 }
 
+Obj *find_member(Struct *st, Token *token) {
+    for (Obj *obj = st->member;obj;obj = obj->next) {
+        if (obj->len == token->len && strncmp(obj->name, token->str, obj->len) == 0) {
+            return obj;
+        }
+    }
+    error_parse(token, "this struct has no member name\n");
+    return NULL;
+}
+
 void add_lvar(Obj *obj) {
     obj->next = locals->objs;
     obj->is_global = false;
@@ -324,6 +334,7 @@ Node *argument(Token **token) {
 //           | "(" expr ")"
 //           | ident "(" argument ")"
 //           | ident "[" expr "]"
+//           | ident "." ident
 //           | ident 
 //           | string
 Node *primary(Token **token) {
@@ -344,6 +355,14 @@ Node *primary(Token **token) {
             }
             node->arguments = argument(token);
             expect(token, ")");
+            return node;
+        }
+        // member
+        if (consume(token, ".")) {
+            Token *member = expect_ident(token);
+            Obj *obj = find_obj(token_ident, true); // should_exist = true
+            Node *node = new_node(NdMember, new_node_obj(obj), NULL);
+            node->member = find_member(obj->type->type_struct, member);
             return node;
         }
         // variable
@@ -369,7 +388,7 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// postfix = primary ( "[" expr "]" | "(" argument ")" )*
+// postfix = primary ( "[" expr "]" | "(" argument ")" | "." ident )*
 Node *postfix(Token **token) {
     Node *node = primary(token);
     while (1) {
@@ -378,6 +397,14 @@ Node *postfix(Token **token) {
             node = new_add(node, index);
             node = new_node(NdDeref, node, NULL);
             expect(token, "]");
+            continue;
+        }
+        if (consume(token, ".")) {
+            add_type(node);
+            Struct *st = node->type->type_struct;
+            Token *member = expect_ident(token);
+            node = new_node(NdMember, node, NULL);
+            node->member = find_member(st, member);
             continue;
         }
         if (consume(token, "(")) {

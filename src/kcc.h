@@ -141,6 +141,7 @@ typedef enum {
     NdRef,      // &
     NdFuncall,  // funtion call
     NdInit,     // { .. , .. }
+    NdMember,   //  .
 } NodeKind;
 
 struct Node {
@@ -164,6 +165,8 @@ struct Node {
     char *func_name;
     int func_name_len;
     Node *arguments;
+
+    Obj *member;
 };
 
 

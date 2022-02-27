@@ -138,6 +138,12 @@ void gen_addr(Node *node) {
     case NdDeref:
         codegen_expr(node->lhs);
         break;
+    case NdMember:
+        gen_addr(node->lhs);
+        stack_pop("  pop rax\n");
+        printf("  add rax, %d\n", node->member->offset);
+        stack_push("  push rax\n");
+        break;
     default:
         error_codegen(); 
     }
@@ -261,6 +267,13 @@ void codegen_expr(Node *node) {
         stack_push("  push rax\n");
         return;
         }
+    case NdMember : 
+        gen_addr(node->lhs);
+        stack_pop("  pop rax\n");
+        printf("  add rax, %d\n", node->member->offset);
+        codegen_load(node->member->type, "rax", "eax", "rax");
+        stack_push("  push rax\n");
+        return;
     case NdReturn:
     case NdBlock:
     case NdIf:
