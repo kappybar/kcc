@@ -33,6 +33,7 @@ Type *copy_type(Type *ty) {
     type->kind = ty->kind;
     type->ptr_to = ty->ptr_to ? copy_type(ty->ptr_to) : NULL;
     type->array_size = ty->array_size;
+    type->type_struct = ty->type_struct;
     return type;
 }
 

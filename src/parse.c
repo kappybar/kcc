@@ -333,9 +333,6 @@ Node *argument(Token **token) {
 // primary =   number 
 //           | "(" expr ")"
 //           | ident "(" argument ")"
-//           | ident "[" expr "]"
-//           | ident "." ident
-//           | ident "->" ident
 //           | ident 
 //           | string
 Node *primary(Token **token) {
@@ -358,33 +355,9 @@ Node *primary(Token **token) {
             expect(token, ")");
             return node;
         }
-        // member
-        if (consume(token, ".")) {
-            Token *member = expect_ident(token);
-            Obj *obj = find_obj(token_ident, true); // should_exist = true
-            Node *node = new_node(NdMember, new_node_obj(obj), NULL);
-            node->member = find_member(obj->type->type_struct, member);
-            return node;
-        }
-        // arrow
-        if (consume(token, "->")) {
-            Token *member = expect_ident(token);
-            Obj *obj = find_obj(token_ident, true); // should_exist = true
-            Node *lhs = new_node(NdDeref, new_node_obj(obj), NULL);
-            Node *node = new_node(NdMember, lhs, NULL);
-            node->member = find_member(obj->type->ptr_to->type_struct, member);
-            return node;
-        }
         // variable
         Obj *obj = find_obj(token_ident, true); // should_exist = true
         Node *node = new_node_obj(obj);
-        add_type(node);
-        if (consume(token, "[")) {
-            Node *index = expr(token);
-            node = new_add(node, index);
-            node = new_node(NdDeref, node, NULL);
-            expect(token, "]");
-        }
         return node;
     }
     Token *token_string = consume_string(token);
@@ -970,6 +943,7 @@ void def(Token **token) {
 Obj *program(Token **token) {
 
     while (!at_eof(*token)) {
+        fprintf(stderr, "%s\n", (*token)->str);
         def(token);
     }
 
