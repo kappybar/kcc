@@ -354,14 +354,23 @@ Node *argument(Token **token) {
 
 // primary =   number 
 //           | "(" expr ")"
+//           | "(" "{" stmt+ "}" ")"
 //           | ident "(" argument ")"
 //           | ident 
 //           | string
 Node *primary(Token **token) {
     if (consume(token, "(")) {
-        Node *node = expr(token);
-        expect(token, ")");
-        return node;
+        if (consume(token , "{")) {
+            Node *body = compound_stmt(token);
+            Node *node = new_node(NdStmtExpr, NULL, NULL);
+            node->body = body;
+            expect(token, ")");
+            return node;
+        } else {
+            Node *node = expr(token);
+            expect(token, ")");
+            return node;
+        }
     }
     Token *token_ident = consume_ident(token);
     if (token_ident) {

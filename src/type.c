@@ -263,6 +263,19 @@ void add_type(Node *node) {
         add_type(node->lhs);
         node->type = node->member->type;
         break;
+    case NdStmtExpr: {
+        Node *nd;
+        for (nd = node->body;nd->next;nd = nd->next) {
+            add_type(nd);
+        }
+        add_type(nd);
+        if (nd->type) {
+            node->type = nd->type;
+        } else {
+            error_type("statement expression returning void is not allowed\n");
+        }
+        break;
+        }
     }
         
     return;

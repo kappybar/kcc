@@ -144,6 +144,7 @@ typedef enum {
     NdFuncall,  // funtion call
     NdInit,     // { .. , .. }
     NdMember,   //  .
+    NdStmtExpr, // ({ .. })
 } NodeKind;
 
 struct Node {

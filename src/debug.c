@@ -305,6 +305,15 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "\n");
         break;
         }
+    case NdStmtExpr : {
+        fprintf(stderr, "StmtExpr");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            display_node(nd, indent + 1);
+        }
+        break;
+        }
     }
     
     return;

@@ -179,3 +179,7 @@ assert 4 "char xc = 1;short xs = 1;int xi = 1;long xl = 1; int main() { return x
 assert 1 "int main() {char y; long x = sizeof(y); return x;}"
 assert 2 "int main() {short y; long x = sizeof(y); return x;}"
 assert 8 "int main() {long y; long x = sizeof(y); return x;}"
+assert 0 "int main() { return ({0;}); }"
+assert 3 "int main() { return ({1;2;3;}); }"
+assert 6 "int main() { return ({1;}) + ({2;}) + ({3;}); }"
+assert 2 "int main() { return ({int x=2;x;}); }"

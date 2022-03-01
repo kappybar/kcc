@@ -307,6 +307,12 @@ void codegen_expr(Node *node) {
         }
         stack_push("  push rax\n");
         return;
+    case NdStmtExpr :
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            codegen_stmt(nd);
+        }
+        stack_push("  push rax # StmtExpr\n");
+        return;
     case NdReturn:
     case NdBlock:
     case NdIf:
