@@ -51,8 +51,7 @@ Type *declspec(Token **token);
 Obj *direct_decl(Token **token, Type *type);
 Obj *declarator(Token **token, Type *type);
 Node *declaration(Token **token, bool is_global);
-Struct *struct_declaration(Token **token, Token *token_ident);
-Struct *struct_def(Token **token);
+Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union);
 void def(Token **token);
 
 bool equal(Token *token, char *s) {
@@ -276,6 +275,29 @@ Struct *new_struct(Token *token_ident, Obj *member) {
     new_struct_->next = user_structs;
     user_structs = new_struct_;
     return new_struct_;
+}
+
+Struct *new_union(Token *token_ident, Obj *member) {
+    Struct *new_union_ = calloc(1, sizeof(Struct));
+    new_union_->member = member;
+    new_union_->name = token_ident->str;
+    new_union_->name_len = token_ident->len;
+
+    for (Obj *obj = new_union_->member;obj;obj = obj->next) {
+        int align = alignment(obj->type);
+        int size = sizeof_type(obj->type);
+        if (new_union_->align < align) {
+            new_union_->align = align;
+        }
+        if (new_union_->size < size) {
+            new_union_->size = size;
+        }
+        obj->offset = 0;
+    }
+
+    new_union_->next = user_structs;
+    user_structs = new_union_;
+    return new_union_;
 }
  
 Node *new_node_num(int val) {
@@ -644,6 +666,10 @@ Node *stmt(Token **token) {
     return node;
 }
 
+bool is_typename(Token **token) {
+    return equal(*token, "int") || equal(*token, "char") || equal(*token ,"struct") || equal(*token, "union");
+}
+
 // compound_stmt = (declaration | stmt)* "}"
 Node *compound_stmt(Token **token) {
     Node head;
@@ -654,7 +680,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (equal(*token, "int") || equal(*token, "char") || equal(*token, "struct")) {
+        if (is_typename(token)) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -704,7 +730,10 @@ Obj *params(Token **token) {
     return locals->objs;
 }
 
-// declspec = "int" | "char" | "struct" ident ("{" struct_declaration "}")? 
+// declspec =   "int" 
+//            | "char" 
+//            | "struct" ident ("{" struct_union_declaration "}")? 
+//            | "union" ident  ("{" struct_union_declaration "}")?
 Type *declspec(Token **token) {
     if (consume_keyword(token, "int")) {
         return new_type(TyInt);
@@ -712,10 +741,22 @@ Type *declspec(Token **token) {
     if (consume_keyword(token, "char")) {
         return new_type(TyChar);
     }
-    expect_keyword(token, "struct");
+    if (consume_keyword(token, "struct")) {
+        Token *token_ident = expect_ident(token);
+        if (consume(token, "{")) {
+            struct_union_declaration(token, token_ident, false);
+            expect(token, "}");
+        }
+        Struct *s = find_struct(token_ident);
+        if (!s) {
+            error_parse(*token, "undefined type");
+        } 
+        return new_type_struct(s);
+    }
+    expect_keyword(token, "union");
     Token *token_ident = expect_ident(token);
     if (consume(token, "{")) {
-        struct_declaration(token, token_ident);
+        struct_union_declaration(token, token_ident, true);
         expect(token, "}");
     }
     Struct *s = find_struct(token_ident);
@@ -852,13 +893,13 @@ Node *declaration(Token **token, bool is_global) {
     return node;
 }
 
-// struct_declaration = (declspce declarator ";")* 
-Struct *struct_declaration(Token **token, Token *token_ident) {
+// struct_union_declaration = (declspce declarator ";")* 
+Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union) {
     Obj head;
     Obj *cur = &head;
 
     while (1) {
-        if (equal(*token, "int") || equal(*token, "char") || equal(*token, "struct")) {
+        if (is_typename(token)) {
             Type *type = declspec(token);
             cur->next = declarator(token, type);
             cur = cur->next;
@@ -868,18 +909,11 @@ Struct *struct_declaration(Token **token, Token *token_ident) {
         break;
     }
 
-    
-    return new_struct(token_ident, head.next);
-}
-
-// struct_def = "struct" ident "{" struct_declaration "}"
-Struct *struct_def(Token **token) {
-    expect_keyword(token, "struct");
-    Token *token_ident = expect_ident(token);
-    expect(token, "{");
-    Struct *new_struct = struct_declaration(token, token_ident);
-    expect(token, "}");
-    return new_struct;
+    if (is_union) {
+        return new_union(token_ident, head.next);
+    } else {
+        return new_struct(token_ident, head.next);
+    }
 }
 
 void allocate_stack_offset(Obj *func) {
@@ -898,7 +932,7 @@ void allocate_stack_offset(Obj *func) {
 
 // definition = declspec declarator "{" compound_stmt 
 //              declspec declarator ("=" initializer)? ";"
-//              declspec ";" <- struct definition
+//              declspec ";"
 void def(Token **token) {
     Type *type = declspec(token);
     if (consume(token, ";")) {
@@ -943,7 +977,6 @@ void def(Token **token) {
 Obj *program(Token **token) {
 
     while (!at_eof(*token)) {
-        fprintf(stderr, "%s\n", (*token)->str);
         def(token);
     }
 

@@ -271,7 +271,9 @@ void codegen_expr(Node *node) {
         gen_addr(node->lhs);
         stack_pop("  pop rax\n");
         printf("  add rax, %d\n", node->member->offset);
-        codegen_load(node->member->type, "rax", "eax", "rax");
+        if (node->type->kind != TyArray) {
+            codegen_load(node->member->type, "rax", "eax", "rax");
+        }
         stack_push("  push rax\n");
         return;
     case NdReturn:

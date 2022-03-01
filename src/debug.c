@@ -294,6 +294,7 @@ void display_node(Node *node, int indent) {
         display_node(node->lhs, indent + 1);
         display_space(indent + 1);
         display_obj(node->member);
+        fprintf(stderr, "\n");
         break;
         }
     }
