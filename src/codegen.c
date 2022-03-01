@@ -9,9 +9,10 @@ void codegen_expr(Node *node);
 void codegen_stmt(Node *node);
 void codegen_function(Obj *func);
 
-const char *args_reg64[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+const char *args_reg64[] = {"rdi", "rsi", "rdx", "rcx", "r8" , "r9" };
 const char *args_reg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
-const char *args_reg8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+const char *args_reg16[] = {"di" , "si" , "dx" , "cx" , "r8w", "r9w"};
+const char *args_reg8[]  = {"dil", "sil", "dl" , "cl" , "r8b", "r9b"};
 int depth = 0;
 
 void stack_pop(char *fmt, ...) {
@@ -34,6 +35,9 @@ void codegen_gvar_init(Type *type, Node *init) {
     switch (type->kind) {
     case TyChar :
         printf("  .byte %d\n", init->val);
+        break;
+    case TyShort :
+        printf("  .value %d\n", init->val);
         break;
     case TyInt :
         printf("  .long %d\n", init->val);
@@ -95,6 +99,9 @@ void codegen_load(Type *type, const char *reg64, const char *reg32, const char *
     case TyInt :
         printf("  mov %s, [%s]\n", reg32, src);
         break;
+    case TyShort :
+        printf("  movsx %s, WORD PTR [%s]\n", reg32, src);
+        break;
     case TyChar :
         printf("  movsx %s, BYTE PTR [%s]\n", reg32, src);
         break;
@@ -113,10 +120,13 @@ void codegen_struct_assign(Type *type, const char *src, const char *dst) {
     return;
 }
 
-void codegen_store(Type *type, const char *reg64, const char *reg32, const char *reg8, const char *dst) {
+void codegen_store(Type *type, const char *reg64, const char *reg32, const char *reg16, const char *reg8, const char *dst) {
     switch (type->kind) {
     case TyInt :
         printf("  mov [%s], %s\n", dst, reg32);
+        break;
+    case TyShort :
+        printf("  mov [%s], %s\n", dst, reg16);
         break;
     case TyChar :
         printf("  mov [%s], %s\n", dst, reg8);
@@ -239,7 +249,7 @@ void codegen_expr(Node *node) {
         if (node->type->kind == TyStruct) {
             codegen_struct_assign(node->type, "rdi", "rax");
         } else {
-            codegen_store(node->type, "rdi", "edi", "dil", "rax");
+            codegen_store(node->type, "rdi", "edi", "di", "dil", "rax");
         }
         stack_push("  push rdi\n");
         return;
@@ -366,7 +376,7 @@ void codegen_function(Obj *func) {
     int i = 0;
     for (Obj *arg = func->args;arg;arg = arg->next) {
         printf("  lea rax, [rbp%+d]\n", -arg->offset);
-        codegen_store(arg->type, args_reg64[i], args_reg32[i], args_reg8[i], "rax");
+        codegen_store(arg->type, args_reg64[i], args_reg32[i], args_reg16[i] ,args_reg8[i], "rax");
         i++;
     }
 

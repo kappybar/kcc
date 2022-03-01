@@ -50,6 +50,7 @@ Type *find_return_type(char *func_name, int func_name_len) {
 Node *zeros_like(Type *type) {
     switch (type->kind) {
     case TyInt :
+    case TyShort :
     case TyChar :
     case TyPtr :
         return new_node_num(0);
@@ -75,6 +76,8 @@ int alignment(Type *ty) {
     switch (ty->kind) {
     case TyInt:
         return 4;
+    case TyShort:
+        return 2;
     case TyChar:
         return 1;
     case TyPtr:
@@ -90,6 +93,8 @@ int sizeof_type(Type *ty) {
     switch (ty->kind) {
     case TyInt:
         return 4;
+    case TyShort:
+        return 2;
     case TyChar:
         return 1;
     case TyPtr:
@@ -114,7 +119,7 @@ bool is_integer(Type *ty) {
     if (!ty) {
         return false;
     }
-    return (ty->kind == TyInt || ty->kind == TyChar);
+    return (ty->kind == TyInt || ty->kind == TyChar || ty->kind == TyShort);
 }
 
 bool is_pointer(Type *ty) {

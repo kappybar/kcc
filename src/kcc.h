@@ -49,6 +49,7 @@ Token *tokenize(char *p);
 
 typedef enum {
     TyInt,
+    TyShort,
     TyChar,
     TyPtr,
     TyArray,

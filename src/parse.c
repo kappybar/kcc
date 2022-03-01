@@ -667,7 +667,13 @@ Node *stmt(Token **token) {
 }
 
 bool is_typename(Token **token) {
-    return equal(*token, "int") || equal(*token, "char") || equal(*token ,"struct") || equal(*token, "union");
+    char *typenames[] = {"int", "char", "short", "struct", "union"};
+    for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
+        if (equal(*token, typenames[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // compound_stmt = (declaration | stmt)* "}"
@@ -731,12 +737,16 @@ Obj *params(Token **token) {
 }
 
 // declspec =   "int" 
+//            | "short"
 //            | "char" 
 //            | "struct" ident ("{" struct_union_declaration "}")? 
 //            | "union" ident  ("{" struct_union_declaration "}")?
 Type *declspec(Token **token) {
     if (consume_keyword(token, "int")) {
         return new_type(TyInt);
+    }
+    if (consume_keyword(token, "short")) {
+        return new_type(TyShort);
     } 
     if (consume_keyword(token, "char")) {
         return new_type(TyChar);

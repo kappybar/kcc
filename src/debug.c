@@ -54,6 +54,10 @@ void display_type(Type *type) {
             strncpy(s + width, "int", 3);
             width += 3;
             break;
+        case TyShort:
+            strncpy(s + width, "short", 5);
+            width += 5;
+            break;
         case TyChar:
             strncpy(s + width, "char", 4);
             width += 4;
