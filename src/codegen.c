@@ -105,6 +105,14 @@ void codegen_load(Type *type, const char *reg64, const char *reg32, const char *
     return;
 }
 
+void codegen_struct_assign(Type *type, const char *src, const char *dst) {
+    for (int i = 0;i < type->type_struct->size; i++) {
+        printf("  movsx r8d, BYTE PTR [%s+%d]\n", src, i);
+        printf("  mov [%s+%d], r8b \n", dst, i);
+    }
+    return;
+}
+
 void codegen_store(Type *type, const char *reg64, const char *reg32, const char *reg8, const char *dst) {
     switch (type->kind) {
     case TyInt :
@@ -214,7 +222,7 @@ void codegen_expr(Node *node) {
         return;
     case NdLvar:
     case NdGvar:
-        if (node->type->kind == TyArray) {
+        if (node->type->kind == TyArray || node->type->kind == TyStruct) {
             gen_addr(node);
         } else {
             gen_addr(node);
@@ -228,7 +236,11 @@ void codegen_expr(Node *node) {
         codegen_expr(node->rhs);
         stack_pop("  pop rdi # rhs \n"); 
         stack_pop("  pop rax # lhs addr \n"); 
-        codegen_store(node->type, "rdi", "edi", "dil", "rax");
+        if (node->type->kind == TyStruct) {
+            codegen_struct_assign(node->type, "rdi", "rax");
+        } else {
+            codegen_store(node->type, "rdi", "edi", "dil", "rax");
+        }
         stack_push("  push rdi\n");
         return;
     case NdDeref:

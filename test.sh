@@ -161,3 +161,5 @@ assert 3 "struct s1 {char m2[4];}; int main() { struct s1 x; x.m2[0] = 1; x.m2[1
 assert 4 "union u1 {int m1;int m2;}; int main() { union u1 x; x.m1 = 4; return x.m2; }"
 assert 4 "union u1 {int m1;char m2[4];}; int main() { union u1 x;x.m1 = 4; return x.m2[0]; }"
 assert 0 "union u1 {int m1;char m2[4];}; int main() { union u1 x;x.m1 = 4; return x.m2[1]; }"
+assert 1 "struct s1 {char m1;}; int main() { struct s1 x, y; x.m1 = 1; y = x; return y.m1; } "
+assert 4 "struct s1 {int m1; char m2;}; int main() { struct s1 x, y; x.m1 = 3; x.m2 = 1; y = x; return y.m1 + y.m2; }"
