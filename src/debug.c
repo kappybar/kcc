@@ -50,6 +50,10 @@ void display_type(Type *type) {
     int width = 0;
     for (ty = type;ty; ty = ty->ptr_to) {
         switch (ty->kind) {
+        case TyLong:
+            strncpy(s + width, "long", 4);
+            width += 4;
+            break;        
         case TyInt:
             strncpy(s + width, "int", 3);
             width += 3;

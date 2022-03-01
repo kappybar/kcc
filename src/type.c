@@ -49,6 +49,7 @@ Type *find_return_type(char *func_name, int func_name_len) {
 
 Node *zeros_like(Type *type) {
     switch (type->kind) {
+    case TyLong:
     case TyInt :
     case TyShort :
     case TyChar :
@@ -74,6 +75,7 @@ Node *zeros_like(Type *type) {
 
 int alignment(Type *ty) {
     switch (ty->kind) {
+    case TyLong:
     case TyInt:
         return 4;
     case TyShort:
@@ -91,6 +93,8 @@ int alignment(Type *ty) {
 
 int sizeof_type(Type *ty) {
     switch (ty->kind) {
+    case TyLong:
+        return 8;
     case TyInt:
         return 4;
     case TyShort:
@@ -119,7 +123,7 @@ bool is_integer(Type *ty) {
     if (!ty) {
         return false;
     }
-    return (ty->kind == TyInt || ty->kind == TyChar || ty->kind == TyShort);
+    return (ty->kind == TyLong || ty->kind == TyInt || ty->kind == TyChar || ty->kind == TyShort);
 }
 
 bool is_pointer(Type *ty) {
@@ -153,7 +157,7 @@ void add_type(Node *node) {
 
     switch (node->kind) {
     case NdNum :
-        node->type = new_type(TyInt);
+        node->type = new_type(TyLong);
         break;
     case NdLvar:
     case NdGvar:
@@ -206,7 +210,7 @@ void add_type(Node *node) {
         if (!same_type(node->lhs->type, node->rhs->type)) {
             error_type("type error : cannot compare this two type\n");
         }
-        node->type = new_type(TyInt);
+        node->type = new_type(TyLong);
         break;
     case NdAssign:
         add_type(node->lhs);

@@ -667,7 +667,7 @@ Node *stmt(Token **token) {
 }
 
 bool is_typename(Token **token) {
-    char *typenames[] = {"int", "char", "short", "struct", "union"};
+    char *typenames[] = {"long", "int", "char", "short", "struct", "union"};
     for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
         if (equal(*token, typenames[i])) {
             return true;
@@ -742,6 +742,9 @@ Obj *params(Token **token) {
 //            | "struct" ident ("{" struct_union_declaration "}")? 
 //            | "union" ident  ("{" struct_union_declaration "}")?
 Type *declspec(Token **token) {
+    if (consume_keyword(token, "long")) {
+        return new_type(TyLong);
+    }
     if (consume_keyword(token, "int")) {
         return new_type(TyInt);
     }

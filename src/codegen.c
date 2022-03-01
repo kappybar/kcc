@@ -42,6 +42,9 @@ void codegen_gvar_init(Type *type, Node *init) {
     case TyInt :
         printf("  .long %d\n", init->val);
         break;
+    case TyLong :
+        printf("  .quad %d\n", init->val);
+        break;
     case TyPtr : {
         if (init->kind == NdNum) {
             printf("  .quad %d\n", init->val);
@@ -96,8 +99,11 @@ void codegen_gvar(Obj *obj) {
 
 void codegen_load(Type *type, const char *reg64, const char *reg32, const char *src) {
     switch(type->kind) {
+    case TyLong:
+        printf("  mov %s, QWORD PTR [%s]\n", reg64, src);
+        break;
     case TyInt :
-        printf("  mov %s, [%s]\n", reg32, src);
+        printf("  mov %s, DWORD PTR [%s]\n", reg32, src);
         break;
     case TyShort :
         printf("  movsx %s, WORD PTR [%s]\n", reg32, src);
@@ -122,6 +128,9 @@ void codegen_struct_assign(Type *type, const char *src, const char *dst) {
 
 void codegen_store(Type *type, const char *reg64, const char *reg32, const char *reg16, const char *reg8, const char *dst) {
     switch (type->kind) {
+    case TyLong :
+        printf("  mov [%s], %s\n", dst, reg64);
+        break;
     case TyInt :
         printf("  mov [%s], %s\n", dst, reg32);
         break;
