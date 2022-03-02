@@ -14,11 +14,20 @@ const char *args_reg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 const char *args_reg16[] = {"di" , "si" , "dx" , "cx" , "r8w", "r9w"};
 const char *args_reg8[]  = {"dil", "sil", "dl" , "cl" , "r8b", "r9b"};
 int depth = 0;
+FILE *output_file;
+
+void println(char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(output_file, fmt, ap);
+    fprintf(output_file, "\n");
+}
 
 void stack_pop(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vprintf(fmt, ap);
+    vfprintf(output_file, fmt, ap);
+    fprintf(output_file, "\n");
     depth += 8;
     return;
 }
@@ -26,7 +35,8 @@ void stack_pop(char *fmt, ...) {
 void stack_push(char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vprintf(fmt, ap);
+    vfprintf(output_file, fmt, ap);
+    fprintf(output_file, "\n");
     depth -= 8;
     return;
 }
@@ -34,30 +44,30 @@ void stack_push(char *fmt, ...) {
 void codegen_gvar_init(Type *type, Node *init) {
     switch (type->kind) {
     case TyChar :
-        printf("  .byte %d\n", init->val);
+        println("  .byte %d", init->val);
         break;
     case TyShort :
-        printf("  .value %d\n", init->val);
+        println("  .value %d", init->val);
         break;
     case TyInt :
-        printf("  .long %d\n", init->val);
+        println("  .long %d", init->val);
         break;
     case TyLong :
-        printf("  .quad %d\n", init->val);
+        println("  .quad %d", init->val);
         break;
     case TyPtr : {
         if (init->kind == NdNum) {
-            printf("  .quad %d\n", init->val);
+            println("  .quad %d", init->val);
         } else if (init->kind == NdGvar) {
             char name[init->obj->len + 1];
             strncpy(name, init->obj->name, init->obj->len);
             name[init->obj->len] = '\0';
-            printf("  .quad %s\n", name);
+            println("  .quad %s", name);
         } else if (init->kind == NdRef) {
             char name[init->lhs->obj->len + 1];
             strncpy(name, init->lhs->obj->name, init->lhs->obj->len);
             name[init->lhs->obj->len] = '\0';
-            printf("  .quad %s\n", name);
+            println("  .quad %s", name);
         } else {
             error_codegen();
         }
@@ -91,8 +101,8 @@ void codegen_gvar(Obj *obj) {
     char s[100];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
-    printf(".data\n");
-    printf("%s:\n", s);
+    println(".data");
+    println("%s:", s);
     codegen_gvar_init(obj->type, obj->init);
     return;
 }
@@ -100,19 +110,19 @@ void codegen_gvar(Obj *obj) {
 void codegen_load(Type *type, const char *reg64, const char *reg32, const char *src) {
     switch(type->kind) {
     case TyLong:
-        printf("  mov %s, QWORD PTR [%s]\n", reg64, src);
+        println("  mov %s, QWORD PTR [%s]", reg64, src);
         break;
     case TyInt :
-        printf("  mov %s, DWORD PTR [%s]\n", reg32, src);
+        println("  mov %s, DWORD PTR [%s]", reg32, src);
         break;
     case TyShort :
-        printf("  movsx %s, WORD PTR [%s]\n", reg32, src);
+        println("  movsx %s, WORD PTR [%s]", reg32, src);
         break;
     case TyChar :
-        printf("  movsx %s, BYTE PTR [%s]\n", reg32, src);
+        println("  movsx %s, BYTE PTR [%s]", reg32, src);
         break;
     default : 
-        printf("  mov %s, [%s]\n", reg64, src);
+        println("  mov %s, [%s]", reg64, src);
         break;
     }
     return;
@@ -120,8 +130,8 @@ void codegen_load(Type *type, const char *reg64, const char *reg32, const char *
 
 void codegen_struct_assign(Type *type, const char *src, const char *dst) {
     for (int i = 0;i < type->type_struct->size; i++) {
-        printf("  movsx r8d, BYTE PTR [%s+%d]\n", src, i);
-        printf("  mov [%s+%d], r8b \n", dst, i);
+        println("  movsx r8d, BYTE PTR [%s+%d]", src, i);
+        println("  mov [%s+%d], r8b ", dst, i);
     }
     return;
 }
@@ -129,19 +139,19 @@ void codegen_struct_assign(Type *type, const char *src, const char *dst) {
 void codegen_store(Type *type, const char *reg64, const char *reg32, const char *reg16, const char *reg8, const char *dst) {
     switch (type->kind) {
     case TyLong :
-        printf("  mov [%s], %s\n", dst, reg64);
+        println("  mov [%s], %s", dst, reg64);
         break;
     case TyInt :
-        printf("  mov [%s], %s\n", dst, reg32);
+        println("  mov [%s], %s", dst, reg32);
         break;
     case TyShort :
-        printf("  mov [%s], %s\n", dst, reg16);
+        println("  mov [%s], %s", dst, reg16);
         break;
     case TyChar :
-        printf("  mov [%s], %s\n", dst, reg8);
+        println("  mov [%s], %s", dst, reg8);
         break;
     default:
-        printf("  mov [%s], %s\n", dst, reg64);
+        println("  mov [%s], %s", dst, reg64);
         break;
     }
     return;
@@ -153,23 +163,23 @@ void gen_addr(Node *node) {
     case NdLvar:
         strncpy(s, node->obj->name, node->obj->len);
         s[node->obj->len] = '\0';
-        printf("  lea rax, [rbp%+d] # %s\n", -node->obj->offset, s);
-        stack_push("  push rax\n");
+        println("  lea rax, [rbp%+d] # %s", -node->obj->offset, s);
+        stack_push("  push rax");
         break; 
     case NdGvar:
         strncpy(s, node->obj->name, node->obj->len);
         s[node->obj->len] = '\0';
-        printf("  lea rax, [rip+%s]\n", s);
-        stack_push("  push rax\n");
+        println("  lea rax, [rip+%s]", s);
+        stack_push("  push rax");
         break; 
     case NdDeref:
         codegen_expr(node->lhs);
         break;
     case NdMember:
         gen_addr(node->lhs);
-        stack_pop("  pop rax\n");
-        printf("  add rax, %d\n", node->member->offset);
-        stack_push("  push rax\n");
+        stack_pop("  pop rax");
+        println("  add rax, %d", node->member->offset);
+        stack_push("  push rax");
         break;
     default:
         error_codegen(); 
@@ -180,46 +190,46 @@ void codegen_stmt(Node *node) {
     switch (node->kind) {
     case NdReturn:
         codegen_expr(node->lhs);
-        stack_pop("  pop rax # return value \n"); 
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
-        printf("  ret\n");
+        stack_pop("  pop rax # return value "); 
+        println("  mov rsp, rbp");
+        println("  pop rbp");
+        println("  ret");
         return;
     case NdIf: {
         int cnt = counter();
         codegen_expr(node->cond);
-        stack_pop("  pop rax\n");
-        printf("  cmp rax, 0\n");
-        printf("  je .Lelse%d\n", cnt);
+        stack_pop("  pop rax");
+        println("  cmp rax, 0");
+        println("  je .Lelse%d", cnt);
         codegen_stmt(node->then);
-        printf("  jmp .Lend%d\n", cnt);
-        printf(".Lelse%d:\n", cnt);
+        println("  jmp .Lend%d", cnt);
+        println(".Lelse%d:", cnt);
         if (node->els) {
             codegen_stmt(node->els);
         }
-        printf(".Lend%d:\n", cnt);
+        println(".Lend%d:", cnt);
         return;
     }
     case NdFor : {
         int cnt = counter();
         if (node->init) {
             codegen_expr(node->init);
-            stack_pop("  pop rax # init%d\n", cnt);
+            stack_pop("  pop rax # init%d", cnt);
         }
-        printf(".Lcond%d:\n", cnt);
+        println(".Lcond%d:", cnt);
         if (node->cond) {
             codegen_expr(node->cond);
-            stack_pop("  pop rax # cond%d\n", cnt);
-            printf("  cmp rax, 0\n");
-            printf("  je .Lend%d\n", cnt);
+            stack_pop("  pop rax # cond%d", cnt);
+            println("  cmp rax, 0");
+            println("  je .Lend%d", cnt);
         }
         codegen_stmt(node->then);
         if (node->inc) {
             codegen_expr(node->inc);
-            stack_pop("  pop rax # inc%d\n", cnt);
+            stack_pop("  pop rax # inc%d", cnt);
         }
-        printf("  jmp .Lcond%d\n", cnt);
-        printf(".Lend%d:\n", cnt);
+        println("  jmp .Lcond%d", cnt);
+        println(".Lend%d:", cnt);
         return;
     }
     case NdBlock :
@@ -229,7 +239,7 @@ void codegen_stmt(Node *node) {
         return;
     default :
         codegen_expr(node);
-        stack_pop("  pop rax # expr -> stmt\n");
+        stack_pop("  pop rax # expr -> stmt");
         return;
     }
 }
@@ -237,7 +247,7 @@ void codegen_stmt(Node *node) {
 void codegen_expr(Node *node) {
     switch (node->kind) {
     case NdNum:
-        stack_push("  push %d\n", node->val);
+        stack_push("  push %d", node->val);
         return;
     case NdLvar:
     case NdGvar:
@@ -245,29 +255,29 @@ void codegen_expr(Node *node) {
             gen_addr(node);
         } else {
             gen_addr(node);
-            stack_pop("  pop rax\n");
+            stack_pop("  pop rax");
             codegen_load(node->type, "rax", "eax", "rax");
-            stack_push("  push rax\n");
+            stack_push("  push rax");
         }
         return;
     case NdAssign:
         gen_addr(node->lhs);
         codegen_expr(node->rhs);
-        stack_pop("  pop rdi # rhs \n"); 
-        stack_pop("  pop rax # lhs addr \n"); 
+        stack_pop("  pop rdi # rhs "); 
+        stack_pop("  pop rax # lhs addr "); 
         if (node->type->kind == TyStruct) {
             codegen_struct_assign(node->type, "rdi", "rax");
         } else {
             codegen_store(node->type, "rdi", "edi", "di", "dil", "rax");
         }
-        stack_push("  push rdi\n");
+        stack_push("  push rdi");
         return;
     case NdDeref:
         codegen_expr(node->lhs);
         if (node->type->kind != TyArray) {
-            stack_pop("  pop rax\n");
-            printf("  mov rax, [rax]\n");
-            stack_push("  push rax\n");
+            stack_pop("  pop rax");
+            println("  mov rax, [rax]");
+            stack_push("  push rax");
         }
         return;
     case NdRef:
@@ -280,7 +290,7 @@ void codegen_expr(Node *node) {
             codegen_expr(nd);
         }
         for (int i = num_of_arg - 1;i >= 0; i--) {
-            stack_pop("  pop %s\n", args_reg64[i]);
+            stack_pop("  pop %s", args_reg64[i]);
         }
         char name[node->func_name_len + 1];
         strncpy(name, node->func_name, node->func_name_len);
@@ -288,30 +298,30 @@ void codegen_expr(Node *node) {
 
         if (depth % 16 != 0) {
             int diff = align_to(depth, 16) - depth;
-            printf("  sub rsp, %d # align\n", diff);
-            printf("  call %s\n", name);
-            printf("  add rsp, %d # align\n", diff);
+            println("  sub rsp, %d # align", diff);
+            println("  call %s", name);
+            println("  add rsp, %d # align", diff);
         } else {
-            printf("  call %s\n", name);
+            println("  call %s", name);
         }
 
-        stack_push("  push rax\n");
+        stack_push("  push rax");
         return;
         }
     case NdMember : 
         gen_addr(node->lhs);
-        stack_pop("  pop rax\n");
-        printf("  add rax, %d\n", node->member->offset);
+        stack_pop("  pop rax");
+        println("  add rax, %d", node->member->offset);
         if (node->type->kind != TyArray) {
             codegen_load(node->member->type, "rax", "eax", "rax");
         }
-        stack_push("  push rax\n");
+        stack_push("  push rax");
         return;
     case NdStmtExpr :
         for (Node *nd = node->body;nd;nd = nd->next) {
             codegen_stmt(nd);
         }
-        stack_push("  push rax # StmtExpr\n");
+        stack_push("  push rax # StmtExpr");
         return;
     case NdReturn:
     case NdBlock:
@@ -324,53 +334,53 @@ void codegen_expr(Node *node) {
 
     codegen_expr(node->lhs);
     codegen_expr(node->rhs);
-    stack_pop("  pop rdi # rhs \n"); 
-    stack_pop("  pop rax # lhs \n"); 
+    stack_pop("  pop rdi # rhs"); 
+    stack_pop("  pop rax # lhs"); 
 
     switch (node->kind) {
     case NdAdd:
-        printf("  add rax, rdi\n"); 
+        println("  add rax, rdi"); 
         break;
     case NdSub:
-        printf("  sub rax, rdi\n");
+        println("  sub rax, rdi");
         break;
     case NdMul:
-        printf("  imul rax, rdi\n");
+        println("  imul rax, rdi");
         break;
     case NdDiv:
-        printf("  cqo\n");
-        printf("  idiv rdi\n");
+        println("  cqo");
+        println("  idiv rdi");
         break;
     case NdMod:
-        printf("  cqo\n");
-        printf("  idiv rdi\n");
-        printf("  mov rax, rdx\n");
+        println("  cqo");
+        println("  idiv rdi");
+        println("  mov rax, rdx");
         break;
     case NdEq:
-        printf("  cmp rax, rdi\n");
-        printf("  sete al\n");
-        printf("  movzb rax, al\n");
+        println("  cmp rax, rdi");
+        println("  sete al");
+        println("  movzb rax, al");
         break;
     case NdNeq:
-        printf("  cmp rax, rdi\n");
-        printf("  setne al\n");
-        printf("  movzb rax, al\n");
+        println("  cmp rax, rdi");
+        println("  setne al");
+        println("  movzb rax, al");
         break;
     case NdLe:
-        printf("  cmp rax, rdi\n");
-        printf("  setle al\n");
-        printf("  movzb rax, al\n");
+        println("  cmp rax, rdi");
+        println("  setle al");
+        println("  movzb rax, al");
         break;
     case NdLt:
-        printf("  cmp rax, rdi\n");
-        printf("  setl al\n");
-        printf("  movzb rax, al\n");
+        println("  cmp rax, rdi");
+        println("  setl al");
+        println("  movzb rax, al");
         break;
     default:
         error_codegen();
     }
 
-    stack_push("  push rax\n");
+    stack_push("  push rax");
     return;
 }
 
@@ -378,19 +388,19 @@ void codegen_function(Obj *func) {
     char name[func->len + 1];
     strncpy(name, func->name, func->len);
     name[func->len] = '\0';
-    printf(".text\n");
-    printf(".globl %s\n", name);
-    printf("%s:\n", name);
+    println(".text");
+    println(".globl %s", name);
+    println("%s:", name);
 
     // prologue
     // call                    depth -= 8;
-    printf("  push rbp\n"); // depth -= 8;
-    printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", func->stack_size);
+    println("  push rbp"); // depth -= 8;
+    println("  mov rbp, rsp");
+    println("  sub rsp, %d", func->stack_size);
     
     int i = 0;
     for (Obj *arg = func->args;arg;arg = arg->next) {
-        printf("  lea rax, [rbp%+d]\n", -arg->offset);
+        println("  lea rax, [rbp%+d]", -arg->offset);
         codegen_store(arg->type, args_reg64[i], args_reg32[i], args_reg16[i] ,args_reg8[i], "rax");
         i++;
     }
@@ -401,14 +411,29 @@ void codegen_function(Obj *func) {
     assert(depth == 0);
 
     // epilogue
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n"); // depth += 8
-    printf("  ret\n\n");   // depth += 8
+    println("  mov rsp, rbp");
+    println("  pop rbp"); // depth += 8
+    println("  ret\n");   // depth += 8
     return;
 }
 
+void open_file(char *path) {
+    if (!path || strcmp(path, "-") == 0) {
+        output_file = stdout;
+        return;
+    }
+    output_file = fopen(path, "w");
+    if (!output_file) {
+        fprintf(stderr, "cannot open file\n");
+        exit(1);
+    }
+    return;
+}
 
-void codegen(Obj *func) {
+void codegen(Obj *func, char *path) {
+    open_file(path);
+    println(".intel_syntax noprefix");
+
     for (Obj *fn = func;fn;fn = fn->next) {
         if (fn->is_function) {
             codegen_function(fn);

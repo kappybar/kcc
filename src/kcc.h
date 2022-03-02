@@ -15,7 +15,6 @@ typedef struct Obj Obj;
 typedef struct Scope Scope;
 typedef struct Node Node;
 
-
 //
 // tokenize.c
 //
@@ -187,7 +186,7 @@ Obj *parse(Token **token);
 // codegen.c
 //
 
-void codegen(Obj *func);
+void codegen(Obj *func, char *path);
 
 //
 // util.c

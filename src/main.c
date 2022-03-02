@@ -1,26 +1,48 @@
 #include "kcc.h"
 
-int main(int argc,char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr,"specify file");
+char *input_path;
+char *output_path;
+
+void parse_args(int argc, char *argv[]) {
+    for (int i = 0;i < argc; i++) {
+        if (strcmp(argv[i], "-o") == 0) {
+            if (argv[i+1]) {
+                output_path = argv[i+1];
+            } else {
+                fprintf(stderr, "specify output file\n");
+                exit(1);
+            }
+            i ++;
+            continue;
+        }
+        input_path = argv[i];
+    }
+    if (!input_path) {
+        fprintf(stderr, "sppecify input file\n");
         exit(1);
     }
+    return;
+}
+
+int main(int argc,char *argv[]) {
+    parse_args(argc, argv);
 
     // tokenize
-    Token *token = tokenize_file(argv[1]);
-    // for debug
+    Token *token = tokenize_file(input_path);
+    #ifdef DEBUG_
     fprintf(stderr, "tokenize finish \n");
     display_token(token);
+    #endif
 
     // parse
     Obj *func = parse(&token);
-    // for debug
+    #ifdef DEBUG_
     fprintf(stderr, "parse finish\n");
     display_program(func);
+    #endif
 
     // codegen
-    printf(".intel_syntax noprefix\n");
-    codegen(func);
+    codegen(func, output_path);
     
     return 0;
 }

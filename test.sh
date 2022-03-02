@@ -4,7 +4,7 @@ assert() {
     expected="$1"
     input="$2"
 
-    echo "$input" | ./kcc - > tmp.s
+    echo "$input" | ./kcc -o tmp.s -
     cc -o tmp tmp.s    
     ./tmp
     actual="$?"
