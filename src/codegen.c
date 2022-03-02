@@ -276,7 +276,7 @@ void codegen_expr(Node *node) {
         codegen_expr(node->lhs);
         if (node->type->kind != TyArray) {
             stack_pop("  pop rax");
-            println("  mov rax, [rax]");
+            codegen_load(node->type, "rax", "eax", "rax");
             stack_push("  push rax");
         }
         return;

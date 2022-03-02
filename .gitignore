@@ -5,3 +5,6 @@ debug
 *.o
 tmp*
 .DS_Store
+*.i
+*.exe
+*.s
