@@ -215,3 +215,42 @@ Token *tokenize(char *p) {
     convert_keyword(head.next);
     return head.next;
 }
+
+char *read_file(char *path) {
+    FILE *fp;
+
+    if (strcmp(path, "-") == 0) {
+        fp = stdin;
+    } else {
+        fp = fopen(path, "r");
+        if (!fp) {
+            fprintf(stderr, "cannot open file\n");
+            exit(1);
+        }
+    }
+
+    char *buf;
+    size_t buflen;
+    FILE *out = open_memstream(&buf, &buflen);
+
+    while (1) {
+        char buf2[4096];
+        int n = fread(buf2, 1, sizeof(buf2), fp);
+        if (n == 0) {
+            break;
+        }
+        fwrite(buf2, 1, n, out);
+    }
+
+    if (fp != stdin) {
+        fclose(fp);
+    }
+    
+    fflush(out);
+    return buf;
+}
+
+Token *tokenize_file(char *path) {
+    char *buf = read_file(path);
+    return tokenize(buf);
+}

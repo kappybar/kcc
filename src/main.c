@@ -2,12 +2,12 @@
 
 int main(int argc,char *argv[]) {
     if (argc != 2) {
-        fprintf(stderr,"specify program");
+        fprintf(stderr,"specify file");
         exit(1);
     }
 
     // tokenize
-    Token *token = tokenize(argv[1]);
+    Token *token = tokenize_file(argv[1]);
     // for debug
     fprintf(stderr, "tokenize finish \n");
     display_token(token);

@@ -41,7 +41,7 @@ struct Token {
 };
 
 Token *new_token(TokenKind kind, Token *cur, char *str);
-Token *tokenize(char *p);
+Token *tokenize_file(char *path);
 
 //
 // type.c
