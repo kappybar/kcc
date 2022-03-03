@@ -54,6 +54,7 @@ typedef enum {
     TyPtr,
     TyArray,
     TyStruct,
+    TyVoid,
 } TypeKind;
 
 

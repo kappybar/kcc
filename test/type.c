@@ -32,6 +32,13 @@ long addl(long x, long y) {
     return x + y;
 }
 
+void swap(int *x, int *y) {
+    int tmp = *x;
+    *x = *y;
+    *y = tmp;
+    return;
+}
+
 
 int main() {
 
@@ -68,6 +75,7 @@ int main() {
     ASSERT(2 , ({short y; long x = sizeof(y); x;}));
     ASSERT(4 , ({int y; long x = sizeof(y); x;}));
     ASSERT(8 , ({long y; long x = sizeof(y); x;}));
+    ASSERT(3, ({int a = 1,b = 3; swap(&a, &b); a;}));
     
     return 0;
 }

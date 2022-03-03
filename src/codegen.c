@@ -43,6 +43,9 @@ void stack_push(char *fmt, ...) {
 
 void codegen_gvar_init(Type *type, Node *init) {
     switch (type->kind) {
+    case TyVoid :
+        error_codegen();
+        break;
     case TyChar :
         println("  .byte %d", init->val);
         break;
@@ -189,8 +192,10 @@ void gen_addr(Node *node) {
 void codegen_stmt(Node *node) {
     switch (node->kind) {
     case NdReturn:
-        codegen_expr(node->lhs);
-        stack_pop("  pop rax # return value "); 
+        if (node->lhs) { 
+            codegen_expr(node->lhs);
+            stack_pop("  pop rax # return value "); 
+        }
         println("  mov rsp, rbp");
         println("  pop rbp");
         println("  ret");

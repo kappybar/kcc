@@ -73,11 +73,17 @@ Node *zeros_like(Type *type) {
         error_type("THIS IS NOT IMPLEMENTED");
         return NULL;
     }
+    case TyVoid : {
+        error_type("void type has no value\n");
+        return NULL;
+    }
     }
 }
 
 int alignment(Type *ty) {
     switch (ty->kind) {
+    case TyVoid:
+        return 0;
     case TyLong:
     case TyInt:
         return 4;
@@ -96,6 +102,8 @@ int alignment(Type *ty) {
 
 int sizeof_type(Type *ty) {
     switch (ty->kind) {
+    case TyVoid:
+        return 1;
     case TyLong:
         return 8;
     case TyInt:
@@ -158,6 +166,20 @@ void add_type(Node *node) {
         return;
     }
 
+    add_type(node->lhs);
+    add_type(node->rhs);
+    add_type(node->cond);
+    add_type(node->then);
+    add_type(node->init);
+    add_type(node->inc);
+    add_type(node->els);
+    for (Node *nd = node->body;nd;nd = nd->next) {
+        add_type(nd);
+    }
+    for (Node *nd = node->arguments;nd;nd = nd->next) {
+        add_type(nd);
+    }
+
     switch (node->kind) {
     case NdNum :
         node->type = new_type(TyLong);
@@ -168,9 +190,6 @@ void add_type(Node *node) {
         break;
     case NdAdd:
     case NdSub:
-        add_type(node->lhs);
-        add_type(node->rhs);
-        
         if (!is_integer(node->rhs->type)) {
             Node *tmp = node->rhs;
             node->rhs = node->lhs;
@@ -197,8 +216,6 @@ void add_type(Node *node) {
     case NdMul:
     case NdDiv:
     case NdMod:
-        add_type(node->lhs);
-        add_type(node->rhs);
         if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
             error_type("type error : cannot mul this two type\n");
         }
@@ -208,78 +225,43 @@ void add_type(Node *node) {
     case NdNeq:
     case NdLt:
     case NdLe:
-        add_type(node->lhs);
-        add_type(node->rhs);
         if (!same_type(node->lhs->type, node->rhs->type)) {
             error_type("type error : cannot compare this two type\n");
         }
         node->type = new_type(TyLong);
         break;
     case NdAssign:
-        add_type(node->lhs);
-        add_type(node->rhs);
-
         if (!same_type(node->lhs->type, node->rhs->type)) {
             error_type("type error : cannot assign different type\n");
         }
         node->type = node->lhs->type;
         break;
     case NdDeref:
-        add_type(node->lhs);
         if (node->lhs->type->kind != TyPtr && node->lhs->type->kind != TyArray) {
             error_type("type error : cannot deref this type\n");
         }
         node->type = node->lhs->type->ptr_to;
         break;
     case NdRef:
-        add_type(node->lhs);
         node->type = new_type_ptr(node->lhs->type);
         break;
     case NdBlock:
-        for (Node *nd = node->body;nd;nd = nd->next) {
-            add_type(nd);
-        }
-        break;
     case NdFor:
-        add_type(node->cond);
-        add_type(node->then);
-        add_type(node->init);
-        add_type(node->inc);
-        break;
     case NdReturn:
-        add_type(node->lhs);
-        break;
     case NdIf:
-        add_type(node->cond);
-        add_type(node->then);
-        if (node->els) add_type(node->els);
+    case NdInit:
+        node->type = new_type(TyVoid);
         break;
     case NdFuncall:
-        for (Node *nd = node->arguments;nd;nd = nd->next) {
-            add_type(nd);
-        }
         node->type = find_return_type(node->func_name, node->func_name_len); 
         break;
-    case NdInit:
-        for (Node *nd = node->body;nd;nd = nd->next) {
-            add_type(nd);
-        }
-        break;
     case NdMember:
-        add_type(node->lhs);
         node->type = node->member->type;
         break;
     case NdStmtExpr: {
         Node *nd;
-        for (nd = node->body;nd->next;nd = nd->next) {
-            add_type(nd);
-        }
-        add_type(nd);
-        if (nd->type) {
-            node->type = nd->type;
-        } else {
-            error_type("statement expression returning void is not allowed\n");
-        }
+        for (nd = node->body;nd->next;nd = nd->next);
+        node->type = nd->type;
         break;
         }
     }

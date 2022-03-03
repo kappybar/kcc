@@ -23,7 +23,7 @@ bool is_ident2(char *p) {
 }
 
 bool is_keyword(Token *token) {
-    char *keywords[] = {"return", "if", "else", "while", "for", "int", "sizeof", "char", "struct", "union", "short", "long"};
+    char *keywords[] = {"return", "if", "else", "while", "for", "int", "sizeof", "char", "struct", "union", "short", "long", "void"};
     for (int i = 0;i < sizeof(keywords) / sizeof(*keywords); i++) {
         if (token->len == strlen(keywords[i]) && strncmp(token->str, keywords[i], token->len) == 0) {
             return true;

@@ -207,6 +207,9 @@ void add_gvar(Obj *obj) {
 }
 
 Obj *new_obj(Token *token, Type *type) {
+    if (type->kind == TyVoid) {
+        error_type("cannot define void object\n");
+    }
     Obj *obj = calloc(1, sizeof(Obj));
     obj->name = token->str;
     obj->len = token->len;
@@ -612,16 +615,21 @@ Node *expr(Token **token) {
 }
 
 // stmt =   expr? ";" 
-//        | "return" expr ";"
+//        | "return" expr? ";"
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
 //        | "while" "(" expr ")" stmt 
 //        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //        | "{" compound_stmt
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
-        Node *node = new_node(NdReturn, expr(token), NULL);
-        expect(token, ";");
-        return node;
+        if (consume(token, ";")) {
+            Node *node = new_node(NdReturn, NULL, NULL);
+            return node;
+        } else {
+            Node *node = new_node(NdReturn, expr(token), NULL);
+            expect(token, ";");
+            return node;
+        }
     }
     if (consume_keyword(token, "if")) {
         expect(token, "(");
@@ -676,7 +684,7 @@ Node *stmt(Token **token) {
 }
 
 bool is_typename(Token **token) {
-    char *typenames[] = {"long", "int", "char", "short", "struct", "union"};
+    char *typenames[] = {"void", "long", "int", "char", "short", "struct", "union"};
     for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
         if (equal(*token, typenames[i])) {
             return true;
@@ -745,12 +753,17 @@ Obj *params(Token **token) {
     return locals->objs;
 }
 
-// declspec =   "int" 
+// declspec =   "void"
+//            | "long"
+//            | "int" 
 //            | "short"
 //            | "char" 
 //            | "struct" ident ("{" struct_union_declaration "}")? 
 //            | "union" ident  ("{" struct_union_declaration "}")?
 Type *declspec(Token **token) {
+    if (consume_keyword(token, "void")) {
+        return new_type(TyVoid);
+    }
     if (consume_keyword(token, "long")) {
         return new_type(TyLong);
     }
