@@ -46,6 +46,8 @@ Node *stmt(Token **token);
 Node *compound_stmt(Token **token);
 
 // declare
+Type *typename(Token **token);
+Type *typespec(Token **token);
 Obj *params(Token **token);
 Type *declspec(Token **token);
 Obj *direct_decl(Token **token, Type *type);
@@ -342,6 +344,16 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
+bool is_typename(Token *token) {
+    char *typenames[] = {"void", "long", "int", "char", "short", "struct", "union"};
+    for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
+        if (equal(token, typenames[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // argument = assign ("," assign) *
 Node *argument(Token **token) {
     Node head;
@@ -446,6 +458,7 @@ Node *postfix(Token **token) {
 
 // unary =   ("+" | "-") unary
 //         | ("*" | "&") unary
+//         | "sizeof" "(" typename ")"
 //         | "sizeof" unary
 //         | postfix
 Node *unary(Token **token) {
@@ -458,12 +471,21 @@ Node *unary(Token **token) {
     } else if (consume(token, "&")) {
         return new_node(NdRef, unary(token), NULL);
     } else if (consume_keyword(token, "sizeof")) {
-        Node *node = unary(token);
-        add_type(node);
-        if (!node->type) {
-            error_parse(*token, "expected expression\n");
+        if (equal(*token, "(") && is_typename((*token)->next)) {
+            // "(" typename ")"
+            expect(token, "(");
+            Type *type = typename(token);
+            expect(token, ")");
+            return new_node_num(sizeof_type(type));
+        } else {
+            // "sizeof" unary
+            Node *node = unary(token);
+            add_type(node);
+            if (!node->type) {
+                error_parse(*token, "expected expression\n");
+            }
+            return new_node_num(sizeof_type(node->type));
         }
-        return new_node_num(sizeof_type(node->type));
     } else {
         return postfix(token);
     }
@@ -683,16 +705,6 @@ Node *stmt(Token **token) {
     return node;
 }
 
-bool is_typename(Token **token) {
-    char *typenames[] = {"void", "long", "int", "char", "short", "struct", "union"};
-    for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
-        if (equal(*token, typenames[i])) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // compound_stmt = (declaration | stmt)* "}"
 Node *compound_stmt(Token **token) {
     Node head;
@@ -703,7 +715,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (is_typename(token)) {
+        if (is_typename(*token)) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -753,14 +765,19 @@ Obj *params(Token **token) {
     return locals->objs;
 }
 
-// declspec =   "void"
+// typename = typespec
+Type *typename(Token **token) {
+    return typespec(token);
+}
+
+// typespec =   "void"
 //            | "long"
 //            | "int" 
 //            | "short"
 //            | "char" 
 //            | "struct" ident ("{" struct_union_declaration "}")? 
 //            | "union" ident  ("{" struct_union_declaration "}")?
-Type *declspec(Token **token) {
+Type *typespec(Token **token) {
     if (consume_keyword(token, "void")) {
         return new_type(TyVoid);
     }
@@ -799,6 +816,11 @@ Type *declspec(Token **token) {
         error_parse(*token, "undefined type");
     } 
     return new_type_struct(s);
+}
+
+// declspec = typespec
+Type *declspec(Token **token) {
+    return typespec(token);
 }
 
 // direct_decl =   ident
@@ -934,7 +956,7 @@ Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_unio
     Obj *cur = &head;
 
     while (1) {
-        if (is_typename(token)) {
+        if (is_typename(*token)) {
             Type *type = declspec(token);
             cur->next = declarator(token, type);
             cur = cur->next;
