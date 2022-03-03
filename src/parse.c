@@ -339,14 +339,14 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     return node;
 }
 
-// argument = expr ("," expr) *
+// argument = assign ("," assign) *
 Node *argument(Token **token) {
     Node head;
     Node *cur = &head;
-    cur->next = expr(token);
+    cur->next = assign(token);
     cur = cur->next;
     while(consume(token, ",")) {
-        cur->next = expr(token);
+        cur->next = assign(token);
         cur = cur->next;
     }
     return head.next;
