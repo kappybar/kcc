@@ -18,6 +18,9 @@ int main() {
     ASSERT(7 , ({ int a;int b;int i; a = 4;b = 3; for(i = 0;i < 10;i = i + 1) {a = a + 1; b = b - 1;} a + b;}));
     ASSERT(3 , ({ int a; a = 3;;;;; a;}));
     ASSERT(7 , ({int a = 3,b = 4,c;c = a + b; c; }));
+    ASSERT(4, ({ 1,2,3,4;}));
+    ASSERT(2, ({int i = 0; i=i+1,i=i+1; i;}));
+    ASSERT(1, ({int a[3] = {1,2,3}; a[1,2] = 1; a[2];}));
 
     return 0;
 }

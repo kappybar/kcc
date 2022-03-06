@@ -145,6 +145,7 @@ typedef enum {
     NdInit,     // { .. , .. }
     NdMember,   //  .
     NdStmtExpr, // ({ .. })
+    NdComma,    // ,
 } NodeKind;
 
 struct Node {

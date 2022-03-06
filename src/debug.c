@@ -318,6 +318,10 @@ void display_node(Node *node, int indent) {
         }
         break;
         }
+    case NdComma : 
+        fprintf(stderr, "Comma\n");
+        display_child(node, indent);
+        break;
     }
     
     return;

@@ -264,6 +264,9 @@ void add_type(Node *node) {
         node->type = nd->type;
         break;
         }
+    case NdComma:
+        node->type = node->rhs->type;
+        break;
     }
         
     return;

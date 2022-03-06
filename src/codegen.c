@@ -381,6 +381,9 @@ void codegen_expr(Node *node) {
         println("  setl al");
         println("  movzb rax, al");
         break;
+    case NdComma:
+        println("  mov rax, rdi");
+        break;
     default:
         error_codegen();
     }

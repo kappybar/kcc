@@ -631,9 +631,13 @@ Node *assign(Token **token) {
     return node;
 }
 
-// expr = assign
+// expr = assign (, assing)*
 Node *expr(Token **token) {
-    return assign(token);
+    Node *node = assign(token);
+    while (consume(token, ",")) {
+        node = new_node(NdComma, node, assign(token));
+    }
+    return node;
 }
 
 // stmt =   expr? ";" 
