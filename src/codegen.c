@@ -43,6 +43,7 @@ void stack_push(char *fmt, ...) {
 
 void codegen_gvar_init(Type *type, Node *init) {
     switch (type->kind) {
+    case TyFunc:
     case TyVoid :
         error_codegen();
         break;
@@ -443,7 +444,7 @@ void codegen(Obj *func, char *path) {
     println(".intel_syntax noprefix");
 
     for (Obj *fn = func;fn;fn = fn->next) {
-        if (fn->is_function) {
+        if (is_function(fn)) {
             codegen_function(fn);
         } else {
             codegen_gvar(fn);

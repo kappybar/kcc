@@ -55,12 +55,14 @@ typedef enum {
     TyArray,
     TyStruct,
     TyVoid,
+    TyFunc,
 } TypeKind;
 
 
 struct Type {
     TypeKind kind;
     Type *ptr_to;
+    Type *return_ty;
 
     size_t array_size;
     Struct *type_struct;
@@ -79,11 +81,13 @@ Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
 Type *new_type_array(Type *ty, size_t size);
 Type *new_type_struct(Struct *s);
+Type *new_type_fun(Type *return_ty);
 Type *copy_type(Type *ty);
 Node *zeros_like(Type *type);
 int alignment(Type *ty);
 bool is_integer(Type *ty);
 bool is_pointer(Type *ty);
+bool is_function(Obj *obj);
 int sizeof_type(Type *ty);
 int ptr_to_size(Type *ty);
 void add_type(Node *node);
@@ -109,7 +113,7 @@ struct Obj {
     Node *init;
 
     // Function
-    bool is_function;
+    // bool is_function;
     Node *body;
     Scope *locals;
     Obj *args;

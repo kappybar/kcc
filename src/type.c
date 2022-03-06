@@ -28,6 +28,13 @@ Type *new_type_struct(Struct *s) {
     return type;
 }
 
+Type *new_type_fun(Type *return_ty) {
+    Type *type = calloc(1, sizeof(Type));
+    type->kind = TyFunc;
+    type->return_ty = return_ty;
+    return type;
+}
+
 Type *copy_type(Type *ty) {
     Type *type = calloc(1, sizeof(Type));
     type->kind = ty->kind;
@@ -42,7 +49,7 @@ Type *find_return_type(char *func_name, int func_name_len) {
         return NULL;
     }
     for (Obj *fn = globals;fn;fn = fn->next) {
-        if (fn->is_function && fn->len == func_name_len && strncmp(func_name, fn->name, func_name_len) == 0) {
+        if (is_function(fn) && fn->len == func_name_len && strncmp(func_name, fn->name, func_name_len) == 0) {
             return fn->return_type;
         }
     }
@@ -77,6 +84,9 @@ Node *zeros_like(Type *type) {
         error_type("void type has no value\n");
         return NULL;
     }
+    case TyFunc : 
+        error_type("func type has no value\n");
+        return NULL;
     }
 }
 
@@ -97,6 +107,9 @@ int alignment(Type *ty) {
         return alignment(ty->ptr_to);
     case TyStruct:
         return ty->type_struct->align;
+    case TyFunc:
+        error_type("cannot alignment func\n");
+        return 0;
     }
 }
 
@@ -118,6 +131,9 @@ int sizeof_type(Type *ty) {
         return ty->array_size * sizeof_type(ty->ptr_to);
     case TyStruct:
         return ty->type_struct->size;
+    case TyFunc:
+        error_type("cannot get size of func\n");
+        return 0;
     }
 }
 
@@ -143,6 +159,10 @@ bool is_pointer(Type *ty) {
     }
     return (ty->kind == TyPtr || ty->kind == TyArray); 
     // implicity type conversion array -> ptr
+}
+
+bool is_function(Obj *obj) {
+    return obj->type->kind == TyFunc;
 }
 
 bool same_type(Type *ty1, Type *ty2) {

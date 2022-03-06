@@ -48,39 +48,52 @@ void display_type(Type *type) {
     Type *ty;
     char s[100];
     int width = 0;
-    for (ty = type;ty; ty = ty->ptr_to) {
+    for (ty = type;ty;) {
         switch (ty->kind) {
         case TyVoid:
             strncpy(s + width, "void", 4);
             width += 4;
+            ty = NULL;
             break;
         case TyLong:
             strncpy(s + width, "long", 4);
             width += 4;
-            break;        
+            ty = NULL;
+            break;     
         case TyInt:
             strncpy(s + width, "int", 3);
             width += 3;
+            ty = NULL;
             break;
         case TyShort:
             strncpy(s + width, "short", 5);
             width += 5;
+            ty = NULL;
             break;
         case TyChar:
             strncpy(s + width, "char", 4);
             width += 4;
+            ty = NULL;
             break;
         case TyArray:
             strncpy(s + width, "array of ", 9);
             width += 9;
+            ty = ty->ptr_to;
             break;
         case TyPtr:
             strncpy(s + width, "ptr to ", 7);
             width += 7;
+            ty = ty->ptr_to;
             break;
         case TyStruct:
             strncpy(s + width, "struct ", 7);
             width += 7;
+            ty = NULL;
+            break;
+        case TyFunc:
+            strncpy(s + width, "func of ", 8);
+            width += 8;
+            ty = ty->return_ty;
             break;
         default:
             break;
@@ -350,7 +363,7 @@ void display_function(Obj *func) {
 
 void display_program(Obj *func) {
     for (Obj *fn = func;fn;fn = fn->next) {
-        if (fn->is_function) {
+        if (is_function(fn)) {
             display_function(fn);
         } else {
             fprintf(stderr, "Gvar : ");
