@@ -36,6 +36,7 @@ Node *mul(Token **token);
 Node *new_add(Node *lhs, Node *rhs);
 Node *new_sub(Node *lhs, Node *rhs);
 Node *add(Token **token);
+Node *shift(Token **token);
 Node *relational (Token **token);
 Node *equality(Token **token);
 Node *assign(Token **token);
@@ -572,25 +573,44 @@ Node *add(Token **token) {
     return node;
 }
 
-// relational = add ( "<" add | ">" add | "<=" add | ">=" add)*
-Node *relational (Token **token) {
+// shift = add ("<<" add | ">>" add)*
+Node *shift(Token **token) {
     Node *node = add(token);
+
+    while (1) {
+        if (consume(token, "<<")) {
+            node = new_node(NdShl, node, add(token));
+            continue;
+        }
+        if (consume(token, ">>")) {
+            node = new_node(NdSar, node, add(token));
+            continue;
+        }
+        break;
+    }
+
+    return node;
+}
+
+// relational = shift ( "<" shift | ">" shift | "<=" shift | ">=" shift)*
+Node *relational (Token **token) {
+    Node *node = shift(token);
 
     while(1) {
         if (consume(token, "<")) {
-            node = new_node(NdLt, node, add(token));
+            node = new_node(NdLt, node, shift(token));
             continue;
         }
         if (consume(token, ">")) {
-            node = new_node(NdLt, add(token), node);
+            node = new_node(NdLt, shift(token), node);
             continue;
         }
         if (consume(token, "<=")) {
-            node = new_node(NdLe, node, add(token));
+            node = new_node(NdLe, node, shift(token));
             continue;
         }
         if (consume(token, ">=")) {
-            node = new_node(NdLe, add(token), node);
+            node = new_node(NdLe, shift(token), node);
             continue;
         }
         break;

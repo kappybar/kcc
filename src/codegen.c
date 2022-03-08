@@ -382,6 +382,14 @@ void codegen_expr(Node *node) {
         println("  setl al");
         println("  movzb rax, al");
         break;
+    case NdShl:
+        println("  mov rcx, rdi");
+        println("  shl rax, cl");
+        break;
+    case NdSar:
+        println("  mov rcx, rdi");
+        println("  sar rax, cl");
+        break;
     case NdComma:
         println("  mov rax, rdi");
         break;

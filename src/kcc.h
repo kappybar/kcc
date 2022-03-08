@@ -136,6 +136,8 @@ typedef enum {
     NdNeq,      // !=
     NdLt,       // <
     NdLe,       // <=
+    NdShl,      // <<
+    NdSar,      // >> shift arithmetic right
     NdAssign,   // =
     NdLvar,     // Local variable
     NdGvar,     // Global variable

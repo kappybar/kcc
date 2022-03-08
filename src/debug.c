@@ -221,6 +221,14 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "\n");
         display_child(node, indent);
         break;
+    case NdShl : 
+        fprintf(stderr, "Shift Left\n");
+        display_child(node, indent);
+        break;
+    case NdSar : 
+        fprintf(stderr, "Shift Arithmetic Right\n");
+        display_child(node, indent);
+        break;
     case NdAssign:
         fprintf(stderr, "Assign");
         display_type(node->type);
