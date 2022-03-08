@@ -113,7 +113,7 @@ struct Obj {
     Node *init;
 
     // Function
-    // bool is_function;
+    bool is_defined;
     Node *body;
     Scope *locals;
     Obj *args;

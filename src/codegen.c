@@ -394,6 +394,9 @@ void codegen_expr(Node *node) {
 }
 
 void codegen_function(Obj *func) {
+    if (!func->is_defined) {
+        return;
+    }
     char name[func->len + 1];
     strncpy(name, func->name, func->len);
     name[func->len] = '\0';

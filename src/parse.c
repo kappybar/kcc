@@ -216,7 +216,6 @@ Obj *new_obj(Token *token, Type *type) {
     obj->name = token->str;
     obj->len = token->len;
     obj->type = type;
-    // obj->is_function = false;
     return obj;
 }
 
@@ -226,7 +225,6 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params) {
     fn->name = token->str;
     fn->return_type = return_ty;
     fn->args = params;
-    // fn->is_function = true;
     fn->type = new_type_fun(return_ty);
     return fn;
 }
@@ -244,7 +242,6 @@ Obj *new_string(Token *token) {
     obj->name = unique_str_name();
     obj->len = strlen(obj->name);
     obj->type = token->type;
-    // obj->is_function = false;
 
     Node head;
     Node *cur = &head;
@@ -1003,21 +1000,29 @@ void def(Token **token) {
     Obj *fn = declarator(token, type);
 
     if (is_function(fn)) {
-        // body
-        expect(token, "{");
-        Node *node = compound_stmt(token);
+        if (consume(token, ";")) {
+            locals->prev = fun_locals;
+            fun_locals = locals;
+            fn->locals = fun_locals;
+            fn->is_defined = false;
+        } else {
+            // body
+            expect(token, "{");
+            Node *node = compound_stmt(token);
 
-        // add type
-        for (Node *cur = node;cur;cur = cur->next) {
-            add_type(cur);
+            // add type
+            for (Node *cur = node;cur;cur = cur->next) {
+                add_type(cur);
+            }
+
+            locals->prev = fun_locals;
+            fun_locals = locals;
+
+            fn->body = node;
+            fn->locals = fun_locals;
+            fn->is_defined = true;
+            allocate_stack_offset(fn);
         }
-
-        locals->prev = fun_locals;
-        fun_locals = locals;
-
-        fn->body = node;
-        fn->locals = fun_locals;
-        allocate_stack_offset(fn);
     } else {
         add_gvar(fn);
         // global variable initialization
