@@ -638,18 +638,47 @@ Node *equality(Token **token) {
     return node;
 }
 
-// assign = equality ("=" assign) ?
+// assign = equality ("="  assign | 
+//                    "+=" assign | 
+//                    "-=" assign | 
+//                    "*=" assign | 
+//                    "/=" assign | 
+//                    "%=" assign | 
+//                    "<<=" assign | 
+//                    ">>=" assign)?
 Node *assign(Token **token) {
     Node *node = equality(token);
     
     if (consume(token, "=")) {
         node = new_node(NdAssign, node, assign(token));
     }
+    if (consume(token, "+=")) {
+        node = new_node(NdAssign, node,  new_add(node, assign(token)));
+    }
+    if (consume(token, "-=")) {
+        node = new_node(NdAssign, node,  new_sub(node, assign(token)));
+    }
+    if (consume(token, "*=")) {
+        node = new_node(NdAssign, node,  new_node(NdMul, node, assign(token)));
+    }
+    if (consume(token, "/=")) {
+        node = new_node(NdAssign, node,  new_node(NdDiv, node, assign(token)));
+    }
+    if (consume(token, "%=")) {
+        node = new_node(NdAssign, node,  new_node(NdMod, node, assign(token)));
+    }
+    if (consume(token, "<<=")) {
+        node = new_node(NdAssign, node,  new_node(NdShl, node, assign(token)));
+    }
+    if (consume(token, ">>=")) {
+        node = new_node(NdAssign, node,  new_node(NdSar, node, assign(token)));
+    }
+
 
     return node;
 }
 
-// expr = assign (, assing)*
+// expr = assign (, assign)*
 Node *expr(Token **token) {
     Node *node = assign(token);
     while (consume(token, ",")) {

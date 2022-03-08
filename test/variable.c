@@ -40,6 +40,15 @@ int main() {
     ASSERT(5, ({a[0] = -1;a[1] = 2;int x = 4; a[0]+a[1]+x; }));
     ASSERT(3 , ({int a[2];char b[2];int c;char d;a[0] = 1;a[1] = 2;b[0] = 3;b[1] = 4;c = 5;d = 6; -a[0]+a[1]-b[0]+b[1]-c+d;  }));
     ASSERT(1 , ({int a = 3;char b = 4;int res; if (a < b) {res = 1;} else { res = 0;} res;}));
+    ASSERT(10, ({int a = 1,b = 1; a = b += 4; a+b;}));
+    ASSERT(2, ({int a[5]; a[0] = 1, a[2] = 2; int *b = a; b += 2; *b;}));
+    ASSERT(2 , ({int a = 5,b = 5; a = b -= 4; a+b;}));
+    ASSERT(1, ({int a[5]; a[0] = 1, a[2] = 2; int *b = a+2; b -= 2; *b;}));
+    ASSERT(10, ({int a = 2; a *= 5; a;}));
+    ASSERT(2, ({int a = 10; a /= 5; a;}));
+    ASSERT(3, ({int a = 13; a %= 5; a;}));
+    ASSERT(16, ({int a = 2; a <<= 3; a;}));
+    ASSERT(2, ({int a = 17; a >>= 3; a;}));
 
     return 0;
 }

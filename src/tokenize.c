@@ -5,8 +5,16 @@ bool startwith(char *p, char *q) {
 }
 
 int isreserved(char *p) {
-    if (startwith(p, "<=") || startwith(p, ">=") || startwith(p, "==") || startwith(p, "!=") || startwith(p, "->") || startwith(p, "<<") || startwith(p, ">>") ) {
-        return 2;
+    if (startwith(p, "<<=") || startwith(p, ">>=")) {
+        return 3;
+    }
+    char *len2tokens[] = {"<=", ">=", "==", "!=", "->",
+                          "<<", ">>",
+                          "+=", "-=", "*=", "/=", "%="};
+    for (int i = 0;i < sizeof(len2tokens) / sizeof(*len2tokens); i++) {
+        if (startwith(p, len2tokens[i])) {
+            return 2;
+        }
     }
     if (ispunct(*p)) {
         return 1;
