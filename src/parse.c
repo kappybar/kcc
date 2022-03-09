@@ -1,6 +1,7 @@
 #include "kcc.h"
 
 Struct *defined_structs;
+Enum *defined_enums;
 Scope *locals = &(Scope){};
 Scope *fun_locals = &(Scope){};
 Obj *globals;
@@ -10,11 +11,13 @@ Scope *next_locals();
 void prev_locals(Scope *new_locals);
 
 // find 
-Obj *find_lvar(Token *token, bool should_exist);
+Obj *find_lvar(Token *token, bool redeclaration);
 Obj *find_gvar(Token *token);
-Obj *find_obj(Token *token, bool should_exist);
+Obj *find_obj(Token *token, bool redeclaration);
 Struct *find_struct(Token *token);
 Obj *find_member(Struct *st, Token *token);
+Enum *find_enum(Token *token);
+Obj *find_enum_const(Token *token);
 
 // new obj
 void add_lvar(Obj *obj);
@@ -58,6 +61,10 @@ Node *initializer(Token **token);
 Node *init_assign(Node *var, Node *init_value);
 
 // declare
+Struct *struct_spec(Token **token);
+Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union);
+Enum *enum_spec(Token **token);
+Enum *enum_list(Token **token, Token *token_enum);
 Type *typename(Token **token);
 Type *typespec(Token **token);
 Type *params(Token **token);
@@ -65,7 +72,6 @@ Type *declspec(Token **token);
 Obj *direct_declarator(Token **token, Type *type);
 Obj *declarator(Token **token, Type *type);
 Node *declaration(Token **token, bool is_global);
-Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union);
 void def(Token **token);
 
 bool equal(Token *token, char *s) {
@@ -145,17 +151,22 @@ void prev_locals(Scope *new_locals) {
     return;
 }
 
-Obj *find_lvar(Token *token, bool should_exist) {
+Obj *find_lvar(Token *token, bool redeclaration) {
     char *name = token->str;
     int len = token->len;
-    for (Scope *scope = locals;scope; scope = scope->prev) {
+    for (Obj *obj = locals->objs;obj; obj = obj->next) {
+        if (len == obj->len && strncmp(name, obj->name, len) == 0) {
+            if (redeclaration) {
+                error_parse(token, "redeclaration");
+            }
+            return obj;
+        }
+    }
+    for (Scope *scope = locals->prev;scope; scope = scope->prev) {
         for (Obj *obj = scope->objs;obj; obj = obj->next  ) {
             if (len == obj->len && strncmp(name, obj->name, len) == 0) {
                 return obj;
             }
-        }
-        if (!should_exist) {
-            return NULL;
         }
     }
     return NULL;
@@ -172,18 +183,15 @@ Obj *find_gvar(Token *token) {
     return NULL;
 }
 
-Obj *find_obj(Token *token, bool should_exist) {
-    Obj *lvar = find_lvar(token, should_exist);
+Obj *find_obj(Token *token, bool redeclaration) {
+    Obj *lvar = find_lvar(token, redeclaration);
     if (lvar) {
-        if (should_exist) return lvar;
-        else error_parse(token, "redeclaration\n");
+        return lvar;
     }
     Obj *gvar = find_gvar(token);
     if (gvar) {
-        if (should_exist) return gvar;
-        else error_parse(token, "redeclaration\n");
+        return gvar;
     }
-    if (should_exist) error_parse(token, "undefinde variable\n");
     return NULL;
 }
 
@@ -203,6 +211,27 @@ Obj *find_member(Struct *st, Token *token) {
         }
     }
     error_parse(token, "this struct has no member name\n");
+    return NULL;
+}
+
+Enum *find_enum(Token *token) {
+    for (Enum *enm = defined_enums;enm;enm = enm->next) {
+        if (enm->name_len == token->len && strncmp(enm->name, token->str, token->len) == 0) {
+            return enm;
+        }
+    }
+    return NULL;
+}
+
+Obj *find_enum_const(Token *token) {
+    for (Enum *enm = defined_enums;enm;enm = enm->next) {
+        for (Obj *obj = enm->enum_list;obj;obj = obj->next) {
+            if (obj->len == token->len && strncmp(obj->name, token->str, token->len) == 0) {
+                return obj;
+            }
+        }
+    }
+    error_parse(token, "undefinesd variable\n");
     return NULL;
 }
 
@@ -315,6 +344,17 @@ Struct *new_union(Token *token_ident, Obj *member) {
     defined_structs = new_uni;
     return new_uni;
 }
+
+Enum *new_enum(Token *token, Obj *enum_list) {
+    Enum *enm = calloc(1, sizeof(Enum));
+    enm->name = token->str;
+    enm->name_len = token->len;
+    enm->enum_list = enum_list;
+
+    enm->next = defined_enums;
+    defined_enums = enm;
+    return enm;
+}
  
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
@@ -367,7 +407,7 @@ Node *new_node(NodeKind kind) {
 }
 
 bool is_typename(Token *token) {
-    char *typenames[] = {"void", "long", "int", "char", "short", "struct", "union"};
+    char *typenames[] = {"void", "long", "int", "char", "short", "struct", "union", "enum"};
     for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
         if (equal(token, typenames[i])) {
             return true;
@@ -424,7 +464,11 @@ Node *primary(Token **token) {
             return node;
         }
         // variable
-        Obj *obj = find_obj(token_ident, true); // should_exist = true
+        Obj *obj = find_obj(token_ident, false); // redeclaration = false
+        if (!obj) {
+            obj = find_enum_const(token_ident);
+            return new_node_num(obj->enum_value);
+        }
         Node *node = new_node_obj(obj);
         return node;
     }
@@ -852,60 +896,6 @@ Type *params(Token **token) {
     return head_ty.next;
 }
 
-// typename = typespec
-Type *typename(Token **token) {
-    return typespec(token);
-}
-
-// typespec =   "void"
-//            | "long"
-//            | "int" 
-//            | "short"
-//            | "char" 
-//            | "struct" ident ("{" struct_union_declaration "}")? 
-//            | "union" ident  ("{" struct_union_declaration "}")?
-Type *typespec(Token **token) {
-    if (consume_keyword(token, "void")) {
-        return new_type(TyVoid);
-    }
-    if (consume_keyword(token, "long")) {
-        return new_type(TyLong);
-    }
-    if (consume_keyword(token, "int")) {
-        return new_type(TyInt);
-    }
-    if (consume_keyword(token, "short")) {
-        return new_type(TyShort);
-    } 
-    if (consume_keyword(token, "char")) {
-        return new_type(TyChar);
-    }
-    if (consume_keyword(token, "struct")) {
-        Token *token_ident = expect_ident(token);
-        if (consume(token, "{")) {
-            struct_union_declaration(token, token_ident, false);
-            expect(token, "}");
-        }
-        Struct *s = find_struct(token_ident);
-        if (!s) {
-            error_parse(*token, "undefined type");
-        } 
-        return new_type_struct(s);
-    }
-    expect_keyword(token, "union");
-    Token *token_ident = expect_ident(token);
-    if (consume(token, "{")) {
-        struct_union_declaration(token, token_ident, true);
-        expect(token, "}");
-    }
-    Struct *s = find_struct(token_ident);
-    if (!s) {
-        error_parse(*token, "undefined type");
-    } 
-    return new_type_struct(s);
-}
-
-
 // initializer = assign
 //               "{" (initializer ",")* initializer? "}"
 Node *initializer(Token **token) {
@@ -966,6 +956,143 @@ Node *init_assign(Node *var, Node *init_value) {
     }
 }
 
+// typename = typespec
+Type *typename(Token **token) {
+    return typespec(token);
+}
+
+// typespec =   "void"
+//            | "long"
+//            | "int" 
+//            | "short"
+//            | "char" 
+//            | struct_spec
+//            | enum_spec
+Type *typespec(Token **token) {
+    if (consume_keyword(token, "void")) {
+        return new_type(TyVoid);
+    }
+    if (consume_keyword(token, "long")) {
+        return new_type(TyLong);
+    }
+    if (consume_keyword(token, "int")) {
+        return new_type(TyInt);
+    }
+    if (consume_keyword(token, "short")) {
+        return new_type(TyShort);
+    } 
+    if (consume_keyword(token, "char")) {
+        return new_type(TyChar);
+    }
+    if (equal(*token, "struct") || equal(*token, "union")) {
+        return new_type_struct(struct_spec(token));
+    }
+    if (equal(*token, "enum")) {
+        enum_spec(token);
+        return new_type(TyInt);
+    }
+    error_parse(*token, "this is not type");
+    return NULL;
+}
+
+// struct_spec = "struct" ident ("{" struct_union_declaration "}")? 
+//               "union"  ident ("{" struct_union_declaration "}")? 
+Struct *struct_spec(Token **token) {
+    if (consume_keyword(token, "struct")) {
+        Token *token_ident = expect_ident(token);
+        if (consume(token, "{")) {
+            struct_union_declaration(token, token_ident, false);
+            expect(token, "}");
+        }
+        Struct *s = find_struct(token_ident);
+        if (!s) {
+            error_parse(*token, "undefined type");
+        } 
+        return s;
+    }
+    if (consume_keyword(token, "union")) {
+        Token *token_ident = expect_ident(token);
+        if (consume(token, "{")) {
+            struct_union_declaration(token, token_ident, true);
+            expect(token, "}");
+        }
+        Struct *s = find_struct(token_ident);
+        if (!s) {
+            error_parse(*token, "undefined type");
+        } 
+        return s;
+    }
+    error_parse(*token, "this is not sturct or union");
+    return NULL;
+}
+
+
+// struct_union_declaration = (declspce declarator ";")* 
+Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union) {
+    Obj head;
+    Obj *cur = &head;
+
+    while (1) {
+        if (is_typename(*token)) {
+            Type *type = declspec(token);
+            cur->next = declarator(token, type);
+            cur = cur->next;
+            expect(token, ";");
+            continue;
+        }
+        break;
+    }
+
+    if (is_union) {
+        return new_union(token_ident, head.next);
+    } else {
+        return new_struct(token_ident, head.next);
+    }
+}
+
+
+// enum_spec = "enum" ident ("(" enum_list ")")?
+Enum *enum_spec(Token **token) {
+    expect_keyword(token, "enum");
+    Token *token_ident = expect_ident(token);
+    if (consume(token, "{")) {
+        enum_list(token, token_ident);
+        expect(token, "}");
+    }
+    Enum *enm = find_enum(token_ident);
+    if (!enm) {
+        error_parse(*token, "undefined type");
+    }
+    return enm;
+}
+
+// enum_list = ident ("," ident)* ","?
+Enum *enum_list(Token **token, Token *token_enum) {
+    int value = 0;
+    Obj head;
+    Obj *cur = &head;
+
+    Token *token_ident = expect_ident(token);
+    Obj *obj = new_obj(token_ident, new_type(TyInt));
+    obj->enum_value = value++;
+    cur->next = obj;
+    cur = cur->next;
+
+    while (consume(token, ",")) {
+        Token *token_ident = consume_ident(token);
+        if (!token_ident) {
+            break;
+        }
+        Obj *obj = new_obj(token_ident, new_type(TyInt));
+        obj->enum_value = value++;
+        cur->next = obj;
+        cur = cur->next;
+    }
+
+    Enum *enm = new_enum(token_enum, head.next);
+    return enm;
+}
+
 // declspec = typespec
 Type *declspec(Token **token) {
     return typespec(token);
@@ -1023,6 +1150,7 @@ Obj *direct_declarator(Token **token, Type *type) {
         }
 
         // obj
+        find_obj(token_ident, true); // redeclaration = true
         while (consume(token, "[")) {
             int size = expect_number(token);
             type = new_type_array(type, size);
@@ -1070,29 +1198,6 @@ Node *declaration(Token **token, bool is_global) {
     Node *node = new_node(NdBlock);
     node->body = head.next;
     return node;
-}
-
-// struct_union_declaration = (declspce declarator ";")* 
-Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union) {
-    Obj head;
-    Obj *cur = &head;
-
-    while (1) {
-        if (is_typename(*token)) {
-            Type *type = declspec(token);
-            cur->next = declarator(token, type);
-            cur = cur->next;
-            expect(token, ";");
-            continue;
-        }
-        break;
-    }
-
-    if (is_union) {
-        return new_union(token_ident, head.next);
-    } else {
-        return new_struct(token_ident, head.next);
-    }
 }
 
 void allocate_stack_offset(Obj *func) {

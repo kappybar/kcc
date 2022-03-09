@@ -11,6 +11,7 @@
 typedef struct Token Token;
 typedef struct Type Type;
 typedef struct Struct Struct;
+typedef struct Enum Enum;
 typedef struct Obj Obj;
 typedef struct Scope Scope;
 typedef struct Node Node;
@@ -120,6 +121,9 @@ struct Obj {
     Scope *locals;
     Obj *args;
     int stack_size;
+     
+    // Enum const
+    int enum_value;
 };
 
 struct Struct {
@@ -129,6 +133,13 @@ struct Struct {
     Obj *member;
     int align;
     int size;
+};
+
+struct Enum {
+    char *name;
+    int name_len;
+    Enum *next;
+    Obj *enum_list;
 };
 
 extern Scope *locals;

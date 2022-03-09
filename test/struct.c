@@ -33,6 +33,19 @@ union u2 {
     char m2[4];
 };
 
+enum e1 {
+    E_0,
+    E_1,
+    E_2,
+};
+
+enum e2 {
+    E_3,
+    E_4
+};
+
+enum e1 eg;
+
 int main() {
 
     ASSERT(0, ({struct s1 a; 0;}));
@@ -51,6 +64,15 @@ int main() {
     ASSERT(0, ({ union u2 x;x.m1 = 4; x.m2[1];}));
     ASSERT(1, ({struct s1 x, y; x.m1 = 1; y = x; y.m1; }));
     ASSERT(4, ({struct s1 x, y; x.m1 = 3; x.m2 = 1; y = x; y.m1 + y.m2; }));
+    ASSERT(0, E_0);
+    ASSERT(1, E_1);
+    ASSERT(0, ({enum e1 x;x = E_0;x;}));
+    ASSERT(1, ({enum e1 x;x = E_1;x;}));
+    ASSERT(1, ({int x;x = E_1;x;}));
+    ASSERT(1, ({eg = E_1;eg;}));
+    ASSERT(4, sizeof(enum e1));
+    
+
 
     return 0;
 }
