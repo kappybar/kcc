@@ -178,7 +178,7 @@ bool same_type(Type *ty1, Type *ty2) {
     if (is_integer(ty1) && is_integer(ty2)) {
         return true;
     } 
-    if ((ty1->kind == TyPtr && ty2->kind == TyArray) || (ty1->kind == TyPtr && ty2->kind == TyArray)) {
+    if (is_pointer(ty1) && is_pointer(ty2)) {
         return true;
     }
     return false;

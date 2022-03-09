@@ -334,7 +334,6 @@ Node *new_node_gvar(Obj *obj) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = NdGvar;
     node->obj = obj;
-    node->type = copy_type(obj->type);
     return node;
 }
 
