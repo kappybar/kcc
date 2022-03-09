@@ -61,10 +61,19 @@ typedef enum {
 
 struct Type {
     TypeKind kind;
-    Type *ptr_to;
-    Type *return_ty;
+    Type *next;
 
+    // TyPtr, TyArray
+    Type *ptr_to;
+
+    // TyFunc
+    Type *return_ty;
+    Type *params;
+
+    // TyArray
     size_t array_size;
+
+    // TyStruct
     Struct *type_struct;
 };
 
@@ -81,7 +90,7 @@ Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
 Type *new_type_array(Type *ty, size_t size);
 Type *new_type_struct(Struct *s);
-Type *new_type_fun(Type *return_ty);
+Type *new_type_fun(Type *return_ty, Type *params_ty);
 Type *copy_type(Type *ty);
 Node *zeros_like(Type *type);
 int alignment(Type *ty);

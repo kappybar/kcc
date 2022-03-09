@@ -28,10 +28,11 @@ Type *new_type_struct(Struct *s) {
     return type;
 }
 
-Type *new_type_fun(Type *return_ty) {
+Type *new_type_fun(Type *return_ty, Type *params_ty) {
     Type *type = calloc(1, sizeof(Type));
     type->kind = TyFunc;
     type->return_ty = return_ty;
+    type->params = params_ty;
     return type;
 }
 

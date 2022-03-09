@@ -17,7 +17,7 @@ Obj *find_obj(Token *token, bool should_exist);
 // new obj
 void add_lvar(Obj *obj);
 void add_gvar(Obj *obj);
-Obj *new_fun(Token *token, Type *return_ty, Obj *params);
+Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty);
 Obj *new_string(Token *token);
 
 // new node
@@ -49,7 +49,7 @@ Node *compound_stmt(Token **token);
 // declare
 Type *typename(Token **token);
 Type *typespec(Token **token);
-Obj *params(Token **token);
+Type *params(Token **token);
 Type *declspec(Token **token);
 Obj *direct_decl(Token **token, Type *type);
 Obj *declarator(Token **token, Type *type);
@@ -220,13 +220,13 @@ Obj *new_obj(Token *token, Type *type) {
     return obj;
 }
 
-Obj *new_fun(Token *token, Type *return_ty, Obj *params) {
+Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty) {
     Obj *fn = calloc(1, sizeof(Obj));
     fn->len = token->len;
     fn->name = token->str;
     fn->return_type = return_ty;
     fn->args = params;
-    fn->type = new_type_fun(return_ty);
+    fn->type = new_type_fun(return_ty, params_ty);
     return fn;
 }
 
@@ -792,17 +792,27 @@ void add_param_to_locals(Obj *param) {
 }
 
 // params = declspce declarator ("," declspec declarator) * 
-Obj *params(Token **token) {
+Type *params(Token **token) {
     Type *type = declspec(token);
+
     Obj head;
     Obj *cur = &head;
+    Type head_ty;
+    Type *cur_ty = &head_ty;
+    
     cur->next = declarator(token, type);
+    cur_ty->next = cur->next->type;
     cur = cur->next;
+    cur_ty = cur_ty->next;
 
     while (consume(token, ",")) {
         Type *ty = declspec(token);
+
         cur->next = declarator(token, ty);
+        cur_ty->next = cur->next->type;
         cur = cur->next;
+        cur_ty = cur_ty->next;
+
     }
 
     for (Obj *arg = head.next;arg;arg = arg->next) {
@@ -813,7 +823,7 @@ Obj *params(Token **token) {
     }
 
     add_param_to_locals(head.next);
-    return locals->objs;
+    return head_ty.next;
 }
 
 // typename = typespec
@@ -876,30 +886,55 @@ Type *declspec(Token **token) {
 
 // direct_decl =   ident
 //               | ident ("[" number "]")* 
-//               | ident ("(" params? ")")?
+//               | ident "(" params? ")"?
+//               | "(" declarator ")"
+//               | "(" declarator ")" ("[" number "]")*
+//               | "(" declarator ")" "(" params? ")"*
 Obj *direct_decl(Token **token, Type *type) {
-    Token *token_ident = expect_ident(token);
+    // if (consume(token, "(")) {
+    //     Obj *obj = declarator(token, new_type(TyAbsent));
+    //     expect(token, ")");
 
-    // function
-    if (consume(token, "(")) {
-        Obj *param = NULL;
-        if (!consume(token, ")")) {
-            param = params(token);
-            expect(token, ")");
+    //     // function
+    //     if (consume(token, "(")) {
+    //         Obj *param = NULL;
+    //         if (!consume(token, ")")) {
+    //             param = params(token);
+    //             expect(token, ")");
+    //         }
+    //         // Obj *fn = new_fun(token_ident, type, param);
+    //         // add_gvar(fn);
+    //         return fn;
+    //     }
+
+    //     // obj->type = fill_absent_type(obj->type);
+
+    // } else {
+        Token *token_ident = expect_ident(token);
+
+        // function
+        if (consume(token, "(")) {
+            Obj *param = NULL;
+            Type *param_ty = NULL;
+            if (!consume(token, ")")) {
+                param_ty = params(token);
+                param = locals->objs;
+                expect(token, ")");
+            }
+            Obj *fn = new_fun(token_ident, type, param, param_ty);
+            add_gvar(fn);
+            return fn;
         }
-        Obj *fn = new_fun(token_ident, type, param);
-        add_gvar(fn);
-        return fn;
-    }
 
-    // obj
-    while (consume(token, "[")) {
-        int size = expect_number(token);
-        type = new_type_array(type, size);
-        expect(token, "]");
-    }
+        // obj
+        while (consume(token, "[")) {
+            int size = expect_number(token);
+            type = new_type_array(type, size);
+            expect(token, "]");
+        }
 
-    return new_obj(token_ident, type);
+        return new_obj(token_ident, type);
+    // }
 }
 
 // initializer = assign

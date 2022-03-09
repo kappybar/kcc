@@ -42,65 +42,54 @@ void display_token(Token *token) {
     return;
 }
 
+void display_type_internal(Type *type) {
+    if (!type) return;
+    switch (type->kind) {
+    case TyVoid:
+        fprintf(stderr, " void");
+        return;
+    case TyLong:
+        fprintf(stderr, " long");
+        return;   
+    case TyInt:
+        fprintf(stderr, " int");
+        return;
+    case TyShort:
+        fprintf(stderr, " short");
+        return;
+    case TyChar:
+        fprintf(stderr, " char");
+        return;
+    case TyArray:
+        fprintf(stderr, " array of");
+        display_type_internal(type->ptr_to);
+        return;
+    case TyPtr:
+        fprintf(stderr, " ptr to");
+        display_type_internal(type->ptr_to);
+        return;
+    case TyStruct:
+        fprintf(stderr, " struct");
+        return;
+    case TyFunc:
+        fprintf(stderr, " func(");
+        for (Type *ty = type->params;ty;ty = ty->next) {
+            display_type_internal(ty);
+            if (ty->next) {
+                fprintf(stderr, ",");
+            }
+        }
+        fprintf(stderr, ")");
+        display_type_internal(type->return_ty);
+        return;
+    }
+}
+
 void display_type(Type *type) {
     if (!type) return;
-    int cnt = 0;
-    Type *ty;
-    char s[100];
-    int width = 0;
-    for (ty = type;ty;) {
-        switch (ty->kind) {
-        case TyVoid:
-            strncpy(s + width, "void", 4);
-            width += 4;
-            ty = NULL;
-            break;
-        case TyLong:
-            strncpy(s + width, "long", 4);
-            width += 4;
-            ty = NULL;
-            break;     
-        case TyInt:
-            strncpy(s + width, "int", 3);
-            width += 3;
-            ty = NULL;
-            break;
-        case TyShort:
-            strncpy(s + width, "short", 5);
-            width += 5;
-            ty = NULL;
-            break;
-        case TyChar:
-            strncpy(s + width, "char", 4);
-            width += 4;
-            ty = NULL;
-            break;
-        case TyArray:
-            strncpy(s + width, "array of ", 9);
-            width += 9;
-            ty = ty->ptr_to;
-            break;
-        case TyPtr:
-            strncpy(s + width, "ptr to ", 7);
-            width += 7;
-            ty = ty->ptr_to;
-            break;
-        case TyStruct:
-            strncpy(s + width, "struct ", 7);
-            width += 7;
-            ty = NULL;
-            break;
-        case TyFunc:
-            strncpy(s + width, "func of ", 8);
-            width += 8;
-            ty = ty->return_ty;
-            break;
-        default:
-            break;
-        }
-    } 
-    s[width] = '\0';
-    fprintf(stderr, " { type : %s }", s);
+    fprintf(stderr, " { type : ");
+    display_type_internal(type);
+    fprintf(stderr, " }");
     return;
 }
 
@@ -352,8 +341,8 @@ void display_function(Obj *func) {
     char s[100];
     strncpy(s, func->name, func->len);
     s[func->len] = '\0';
-    fprintf(stderr, "Function : (name : %s, return ", s);
-    display_type(func->return_type);
+    fprintf(stderr, "Function : (name : %s, ", s);
+    display_type(func->type);
     fprintf(stderr, ")\n");
     display_space(1);
     fprintf(stderr, "Args : \n");
