@@ -1,6 +1,6 @@
 #include "kcc.h"
 
-Struct *user_structs;
+Struct *defined_structs;
 Scope *locals = &(Scope){};
 Scope *fun_locals = &(Scope){};
 Obj *globals;
@@ -9,23 +9,30 @@ Obj *globals;
 Scope *next_locals();
 void prev_locals(Scope *new_locals);
 
-// find obj
+// find 
 Obj *find_lvar(Token *token, bool should_exist);
 Obj *find_gvar(Token *token);
 Obj *find_obj(Token *token, bool should_exist);
+Struct *find_struct(Token *token);
+Obj *find_member(Struct *st, Token *token);
 
 // new obj
 void add_lvar(Obj *obj);
 void add_gvar(Obj *obj);
+Obj *new_obj(Token *token, Type *type);
 Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty);
 Obj *new_string(Token *token);
+Struct *new_struct(Token *token_ident, Obj *member);
+Struct *new_union(Token *token_ident, Obj *member);
 
 // new node
 Node *new_node_num(int val);
 Node *new_node_lvar(Obj *obj);
 Node *new_node_gvar(Obj *obj);
 Node *new_node_obj(Obj *obj);
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs);
+Node *new_node_unary(NodeKind kind, Node *lhs);
+Node *new_node(NodeKind kind);
 
 // expr
 Node *argument(Token **token);
@@ -46,12 +53,16 @@ Node *expr(Token **token);
 Node *stmt(Token **token);
 Node *compound_stmt(Token **token);
 
+// initialize
+Node *initializer(Token **token);
+Node *init_assign(Node *var, Node *init_value);
+
 // declare
 Type *typename(Token **token);
 Type *typespec(Token **token);
 Type *params(Token **token);
 Type *declspec(Token **token);
-Obj *direct_decl(Token **token, Type *type);
+Obj *direct_declarator(Token **token, Type *type);
 Obj *declarator(Token **token, Type *type);
 Node *declaration(Token **token, bool is_global);
 Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union);
@@ -177,7 +188,7 @@ Obj *find_obj(Token *token, bool should_exist) {
 }
 
 Struct *find_struct(Token *token) {
-    for (Struct *s = user_structs;s;s = s->next) {
+    for (Struct *s = defined_structs;s;s = s->next) {
         if (s->name_len == token->len && strncmp(s->name, token->str, token->len) == 0 ) {
             return s;
         }
@@ -224,7 +235,6 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty) {
     Obj *fn = calloc(1, sizeof(Obj));
     fn->len = token->len;
     fn->name = token->str;
-    fn->return_type = return_ty;
     fn->args = params;
     fn->type = new_type_fun(return_ty, params_ty);
     return fn;
@@ -233,7 +243,7 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty) {
 char *unique_str_name() {
     int cnt = counter();
     char *name = calloc(10, sizeof(char));
-    int len = sprintf(name, ".L%d", cnt);
+    int len = sprintf(name, ".LC%d.str", cnt);
     name[len] = '\0';
     return name;
 }
@@ -253,55 +263,57 @@ Obj *new_string(Token *token) {
     cur->next = new_node_num(0);
     cur = cur->next;
 
-    obj->init = new_node(NdInit, NULL, NULL);
+    obj->init = new_node(NdInit);
     obj->init->body = head.next;
     return obj;
 }
 
 Struct *new_struct(Token *token_ident, Obj *member) {
-    Struct *new_struct_ = calloc(1, sizeof(Struct));
-    new_struct_->member = member;
-    new_struct_->name = token_ident->str;
-    new_struct_->name_len = token_ident->len;
-
+    Struct *new_st = calloc(1, sizeof(Struct));
+    new_st->member = member;
+    new_st->name = token_ident->str;
+    new_st->name_len = token_ident->len;
+    
+    // calculate offset, align, size
     int offset = 0;
-    for (Obj *obj = new_struct_->member;obj;obj = obj->next) {
+    for (Obj *obj = new_st->member;obj;obj = obj->next) {
         int align = alignment(obj->type);
         offset = align_to(offset, align);
         obj->offset = offset;
         offset += sizeof_type(obj->type);
-        if (new_struct_->align < align) {
-            new_struct_->align = align;
+        if (new_st->align < align) {
+            new_st->align = align;
         }
     }
-    new_struct_->size = offset;
+    new_st->size = offset;
 
-    new_struct_->next = user_structs;
-    user_structs = new_struct_;
-    return new_struct_;
+    new_st->next = defined_structs;
+    defined_structs = new_st;
+    return new_st;
 }
 
 Struct *new_union(Token *token_ident, Obj *member) {
-    Struct *new_union_ = calloc(1, sizeof(Struct));
-    new_union_->member = member;
-    new_union_->name = token_ident->str;
-    new_union_->name_len = token_ident->len;
+    Struct *new_uni = calloc(1, sizeof(Struct));
+    new_uni->member = member;
+    new_uni->name = token_ident->str;
+    new_uni->name_len = token_ident->len;
 
-    for (Obj *obj = new_union_->member;obj;obj = obj->next) {
+    // calculate offset, align, size
+    for (Obj *obj = new_uni->member;obj;obj = obj->next) {
         int align = alignment(obj->type);
         int size = sizeof_type(obj->type);
-        if (new_union_->align < align) {
-            new_union_->align = align;
+        if (new_uni->align < align) {
+            new_uni->align = align;
         }
-        if (new_union_->size < size) {
-            new_union_->size = size;
+        if (new_uni->size < size) {
+            new_uni->size = size;
         }
         obj->offset = 0;
     }
 
-    new_union_->next = user_structs;
-    user_structs = new_union_;
-    return new_union_;
+    new_uni->next = defined_structs;
+    defined_structs = new_uni;
+    return new_uni;
 }
  
 Node *new_node_num(int val) {
@@ -334,11 +346,24 @@ Node *new_node_obj(Obj *obj) {
     }
 }
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node_binary(NodeKind kind, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
+    return node;
+}
+
+Node *new_node_unary(NodeKind kind, Node *lhs) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = kind;
+    node->lhs = lhs;
+    return node;
+}
+
+Node *new_node(NodeKind kind) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = kind;
     return node;
 }
 
@@ -375,7 +400,7 @@ Node *primary(Token **token) {
     if (consume(token, "(")) {
         if (consume(token , "{")) {
             Node *body = compound_stmt(token);
-            Node *node = new_node(NdStmtExpr, NULL, NULL);
+            Node *node = new_node(NdStmtExpr);
             node->body = body;
             expect(token, ")");
             return node;
@@ -389,7 +414,7 @@ Node *primary(Token **token) {
     if (token_ident) {
         // funccall
         if (consume(token, "(")) {
-            Node *node = new_node(NdFuncall, NULL, NULL);
+            Node *node = new_node(NdFuncall);
             node->func_name = token_ident->str;
             node->func_name_len = token_ident->len;
             if (consume(token, ")")) {
@@ -415,14 +440,17 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// postfix = primary ( "[" expr "]" | "(" argument ")" | "." ident | "->" ident )*
+// postfix = primary ( "[" expr "]"     | 
+//                     "(" argument ")" | 
+//                     "." ident        |
+//                      "->" ident )*
 Node *postfix(Token **token) {
     Node *node = primary(token);
     while (1) {
         if (consume(token, "[")) {
             Node *index = expr(token);
             node = new_add(node, index);
-            node = new_node(NdDeref, node, NULL);
+            node = new_node_unary(NdDeref, node);
             expect(token, "]");
             continue;
         }
@@ -430,16 +458,16 @@ Node *postfix(Token **token) {
             add_type(node);
             Struct *st = node->type->type_struct;
             Token *member = expect_ident(token);
-            node = new_node(NdMember, node, NULL);
+            node = new_node_unary(NdMember, node);
             node->member = find_member(st, member);
             continue;
         }
         if (consume(token, "->")) {
-            node = new_node(NdDeref, node, NULL);
+            node = new_node_unary(NdDeref, node);
             add_type(node);
             Struct *st = node->type->type_struct;
             Token *member = expect_ident(token);
-            node = new_node(NdMember, node, NULL);
+            node = new_node_unary(NdMember, node);
             node->member = find_member(st, member);
             continue;
         }
@@ -463,11 +491,11 @@ Node *unary(Token **token) {
     if (consume(token, "+")) {
         return unary(token);
     } else if (consume(token, "-")) {
-        return new_node(NdSub, new_node_num(0), unary(token));
+        return new_node_binary(NdSub, new_node_num(0), unary(token));
     } else if (consume(token, "*")) {
-        return new_node(NdDeref, unary(token), NULL);
+        return new_node_unary(NdDeref, unary(token));
     } else if (consume(token, "&")) {
-        return new_node(NdRef, unary(token), NULL);
+        return new_node_unary(NdRef, unary(token));
     } else if (consume_keyword(token, "sizeof")) {
         if (equal(*token, "(") && is_typename((*token)->next)) {
             // "(" typename ")"
@@ -494,15 +522,15 @@ Node *mul(Token **token) {
     Node *node = unary(token);
     while (1) {
         if (consume(token, "*")) {
-            node = new_node(NdMul, node, unary(token));
+            node = new_node_binary(NdMul, node, unary(token));
             continue;
         }
         if (consume(token, "/")) {
-            node = new_node(NdDiv, node, unary(token));
+            node = new_node_binary(NdDiv, node, unary(token));
             continue;
         }
         if (consume(token, "%")) {
-            node = new_node(NdMod, node, unary(token));
+            node = new_node_binary(NdMod, node, unary(token));
             continue;
         }
         break;
@@ -521,11 +549,11 @@ Node *new_add(Node *lhs, Node *rhs) {
         lhs = tmp;
     }
     if (is_integer(lhs->type) && is_integer(rhs->type)) {
-        return new_node(NdAdd, lhs, rhs);
+        return new_node_binary(NdAdd, lhs, rhs);
     } else if (is_integer(rhs->type) && is_pointer(lhs->type)) {
         int size = ptr_to_size(lhs->type);
-        rhs = new_node(NdMul, rhs, new_node_num(size));
-        return new_node(NdAdd, lhs , rhs);
+        rhs = new_node_binary(NdMul, rhs, new_node_num(size));
+        return new_node_binary(NdAdd, lhs , rhs);
     } else {
         error_type("type error : cannot add this two type\n");
         return NULL;
@@ -538,15 +566,15 @@ Node *new_sub(Node *lhs, Node *rhs) {
 
 
     if (is_integer(lhs->type) && is_integer(rhs->type)) {
-        return new_node(NdSub, lhs, rhs);
+        return new_node_binary(NdSub, lhs, rhs);
     } else if (is_pointer(lhs->type) && is_integer(rhs->type)) {
         int size = ptr_to_size(lhs->type);
-        rhs = new_node(NdMul, rhs, new_node_num(size));
-        return new_node(NdSub, lhs , rhs);
+        rhs = new_node_binary(NdMul, rhs, new_node_num(size));
+        return new_node_binary(NdSub, lhs , rhs);
     } else if (is_pointer(lhs->type) && is_pointer(rhs->type)) {
         int size = ptr_to_size(lhs->type);
-        Node *node = new_node(NdSub, lhs, rhs);
-        return new_node(NdDiv, node, new_node_num(size));
+        Node *node = new_node_binary(NdSub, lhs, rhs);
+        return new_node_binary(NdDiv, node, new_node_num(size));
     } else {
         error_type("type error : cannot sub this two type\n");
         return NULL;
@@ -578,11 +606,11 @@ Node *shift(Token **token) {
 
     while (1) {
         if (consume(token, "<<")) {
-            node = new_node(NdShl, node, add(token));
+            node = new_node_binary(NdShl, node, add(token));
             continue;
         }
         if (consume(token, ">>")) {
-            node = new_node(NdSar, node, add(token));
+            node = new_node_binary(NdSar, node, add(token));
             continue;
         }
         break;
@@ -597,19 +625,19 @@ Node *relational (Token **token) {
 
     while(1) {
         if (consume(token, "<")) {
-            node = new_node(NdLt, node, shift(token));
+            node = new_node_binary(NdLt, node, shift(token));
             continue;
         }
         if (consume(token, ">")) {
-            node = new_node(NdLt, shift(token), node);
+            node = new_node_binary(NdLt, shift(token), node);
             continue;
         }
         if (consume(token, "<=")) {
-            node = new_node(NdLe, node, shift(token));
+            node = new_node_binary(NdLe, node, shift(token));
             continue;
         }
         if (consume(token, ">=")) {
-            node = new_node(NdLe, shift(token), node);
+            node = new_node_binary(NdLe, shift(token), node);
             continue;
         }
         break;
@@ -624,11 +652,11 @@ Node *equality(Token **token) {
 
     while (1) {
         if (consume(token, "==")) {
-            node = new_node(NdEq, node, relational(token));
+            node = new_node_binary(NdEq, node, relational(token));
             continue;
         } 
         if (consume(token, "!=")) {
-            node = new_node(NdNeq, node, relational(token));
+            node = new_node_binary(NdNeq, node, relational(token));
             continue;
         }
         break;
@@ -649,28 +677,28 @@ Node *assign(Token **token) {
     Node *node = equality(token);
     
     if (consume(token, "=")) {
-        node = new_node(NdAssign, node, assign(token));
+        node = new_node_binary(NdAssign, node, assign(token));
     }
     if (consume(token, "+=")) {
-        node = new_node(NdAssign, node,  new_add(node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_add(node, assign(token)));
     }
     if (consume(token, "-=")) {
-        node = new_node(NdAssign, node,  new_sub(node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_sub(node, assign(token)));
     }
     if (consume(token, "*=")) {
-        node = new_node(NdAssign, node,  new_node(NdMul, node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdMul, node, assign(token)));
     }
     if (consume(token, "/=")) {
-        node = new_node(NdAssign, node,  new_node(NdDiv, node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdDiv, node, assign(token)));
     }
     if (consume(token, "%=")) {
-        node = new_node(NdAssign, node,  new_node(NdMod, node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdMod, node, assign(token)));
     }
     if (consume(token, "<<=")) {
-        node = new_node(NdAssign, node,  new_node(NdShl, node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdShl, node, assign(token)));
     }
     if (consume(token, ">>=")) {
-        node = new_node(NdAssign, node,  new_node(NdSar, node, assign(token)));
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdSar, node, assign(token)));
     }
 
 
@@ -681,7 +709,7 @@ Node *assign(Token **token) {
 Node *expr(Token **token) {
     Node *node = assign(token);
     while (consume(token, ",")) {
-        node = new_node(NdComma, node, assign(token));
+        node = new_node_binary(NdComma, node, assign(token));
     }
     return node;
 }
@@ -695,17 +723,17 @@ Node *expr(Token **token) {
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
         if (consume(token, ";")) {
-            Node *node = new_node(NdReturn, NULL, NULL);
+            Node *node = new_node(NdReturn);
             return node;
         } else {
-            Node *node = new_node(NdReturn, expr(token), NULL);
+            Node *node = new_node_unary(NdReturn, expr(token));
             expect(token, ";");
             return node;
         }
     }
     if (consume_keyword(token, "if")) {
         expect(token, "(");
-        Node *node = new_node(NdIf, NULL, NULL);
+        Node *node = new_node(NdIf);
         node->cond = expr(token);
         expect(token, ")");
         node->then = stmt(token);
@@ -716,7 +744,7 @@ Node *stmt(Token **token) {
     }
     if (consume_keyword(token, "while")) {
         expect(token, "(");
-        Node *node = new_node(NdFor, NULL, NULL);
+        Node *node = new_node(NdFor);
         node->cond = expr(token);
         expect(token, ")");
         node->then = stmt(token);
@@ -724,7 +752,7 @@ Node *stmt(Token **token) {
     }
     if (consume_keyword(token, "for")) {
         expect(token, "(");
-        Node *node = new_node(NdFor, NULL, NULL);
+        Node *node = new_node(NdFor);
         if (!consume(token, ";")) {
             node->init = expr(token);
             expect(token, ";");
@@ -741,12 +769,12 @@ Node *stmt(Token **token) {
         return node;
     }
     if (consume(token, "{")) {
-        Node *node = new_node(NdBlock, NULL, NULL);
+        Node *node = new_node(NdBlock);
         node->body = compound_stmt(token);;
         return node;
     }
     if (consume(token, ";")) {
-        Node *node = new_node(NdBlock, NULL, NULL);
+        Node *node = new_node(NdBlock);
         return node;
     }
     Node *node = expr(token);
@@ -878,18 +906,79 @@ Type *typespec(Token **token) {
     return new_type_struct(s);
 }
 
+
+// initializer = assign
+//               "{" (initializer ",")* initializer? "}"
+Node *initializer(Token **token) {
+    if (consume(token, "{")) {
+        Node head;
+        head.next = NULL;
+        Node *cur = &head;
+
+        int i = 0;
+        while(!consume(token, "}")) {
+            if (i++ > 0) {
+                expect(token, ",");
+            }
+            cur->next = initializer(token);
+            cur = cur->next;
+        }
+
+        Node *node = new_node(NdInit);
+        node->body = head.next;
+        return node;
+    } else {
+        return assign(token);
+    }
+}
+
+Node *init_assign(Node *var, Node *init_value) {
+    add_type(var);
+    add_type(init_value);
+    switch (init_value->kind) {
+    case NdInit : {
+        if (var->type->kind == TyArray) {
+            Node head;
+            head.next = NULL;
+            Node *cur = &head;
+            int i = 0;
+            for (Node *nd = init_value->body;nd;nd = nd->next) {
+                Node *var_i = new_node_unary(NdDeref, new_add(var, new_node_num(i++)));
+                cur->next = init_assign(var_i, nd);
+                cur = cur->next;
+            }
+            Node *node = new_node(NdBlock);
+            node->body = head.next;
+            return node;
+        } else {
+            return init_assign(var, init_value->body);
+        }
+    }
+    case NdGvar : {
+        // char *s = "abc"; -> "abc" Global variable
+        // char s[4] = "abc"; -> "abc" initial variable
+        // In later case, I have to initialize s by "abc"
+        if (var->type->kind == TyArray && var->type->ptr_to->kind == TyChar) {
+            return init_assign(var, init_value->obj->init);
+        }
+    }
+    default : 
+        return new_node_binary(NdAssign, var, init_value);
+    }
+}
+
 // declspec = typespec
 Type *declspec(Token **token) {
     return typespec(token);
 }
 
-// direct_decl =   ident
-//               | ident ("[" number "]")* 
-//               | ident "(" params? ")"?
-//               | "(" declarator ")"
-//               | "(" declarator ")" ("[" number "]")*
-//               | "(" declarator ")" "(" params? ")"*
-Obj *direct_decl(Token **token, Type *type) {
+// direct_declarator =   ident
+//                     | ident ("[" number "]")* 
+//                     | ident "(" params? ")"?
+//                     | "(" declarator ")"
+//                     | "(" declarator ")" ("[" number "]")*
+//                     | "(" declarator ")" "(" params? ")"*
+Obj *direct_declarator(Token **token, Type *type) {
     if (consume(token, "(")) {
         Obj *obj = declarator(token, new_type(TyAbsent));
         expect(token, ")");
@@ -945,72 +1034,12 @@ Obj *direct_decl(Token **token, Type *type) {
     }
 }
 
-// initializer = assign
-//               "{" (initializer ",")* initializer? "}"
-Node *initializer(Token **token) {
-    if (consume(token, "{")) {
-        Node head;
-        head.next = NULL;
-        Node *cur = &head;
-
-        int i = 0;
-        while(!consume(token, "}")) {
-            if (i++ > 0) {
-                expect(token, ",");
-            }
-            cur->next = initializer(token);
-            cur = cur->next;
-        }
-
-        Node *node = new_node(NdInit, NULL, NULL);
-        node->body = head.next;
-        return node;
-    } else {
-        return assign(token);
-    }
-}
-
-Node *init_assign(Node *var, Node *init_value) {
-    add_type(var);
-    add_type(init_value);
-    switch (init_value->kind) {
-    case NdInit : {
-        if (var->type->kind == TyArray) {
-            Node head;
-            head.next = NULL;
-            Node *cur = &head;
-            int i = 0;
-            for (Node *nd = init_value->body;nd;nd = nd->next) {
-                Node *var_i = new_node(NdDeref, new_add(var, new_node_num(i++)), NULL);
-                cur->next = init_assign(var_i, nd);
-                cur = cur->next;
-            }
-            Node *node = new_node(NdBlock, NULL, NULL);
-            node->body = head.next;
-            return node;
-        } else {
-            return init_assign(var, init_value->body);
-        }
-    }
-    case NdGvar : {
-        // char *s = "abc"; -> "abc" Global variable
-        // char s[4] = "abc"; -> "abc" initial variable
-        // In later case, I have to initialize s by "abc"
-        if (var->type->kind == TyArray && var->type->ptr_to->kind == TyChar) {
-            return init_assign(var, init_value->obj->init);
-        }
-    }
-    default : 
-        return new_node(NdAssign, var, init_value);
-    }
-}
-
-// declarator = "*"* direct_decl
+// declarator = "*"* direct_declarator
 Obj *declarator(Token **token, Type *type) {
     while (consume(token, "*")) {
         type = new_type_ptr(type);
     }
-    return direct_decl(token, type);
+    return direct_declarator(token, type);
 }
 
 // declaration = declspec declarator ("=" initializer)? ("," declarator ("=" initializer)? )* ";"
@@ -1039,7 +1068,7 @@ Node *declaration(Token **token, bool is_global) {
     
     }
 
-    Node *node = new_node(NdBlock, NULL, NULL);
+    Node *node = new_node(NdBlock);
     node->body = head.next;
     return node;
 }

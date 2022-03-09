@@ -120,15 +120,15 @@ struct Obj {
     int len;
     int offset;
     bool is_global;
-
+    
+    // global var
     Node *init;
 
-    // Function
+    // TyFunc
     bool is_defined;
     Node *body;
     Scope *locals;
     Obj *args;
-    Type *return_type;
     int stack_size;
 };
 
@@ -168,36 +168,40 @@ typedef enum {
 struct Node {
     NodeKind kind;
     Node *next;
+    Type *type;
     Node *lhs; // left hand side
     Node *rhs; // right hand side
-
+    
+    // NdIf, NdFor
     Node *cond;
     Node *then;
     Node *els;
+
+    // NdFor
     Node *init;
     Node *inc;
-
+    
+    // NdBlock, NdStmtExpr, NdInit
     Node *body;
+    
+    // NdNum
+    int val;  
 
-    int val;   
+    // NdLvar, NdGvar 
     Obj *obj;   
-    Type *type;
-
+    
+    // NdFuncall
     char *func_name;
     int func_name_len;
     Node *arguments;
-
+    
+    // NdMember
     Obj *member;
 };
 
-
-bool equal(Token *token, char *s);
-bool at_eof(Token *token);
-bool consume(Token **token, char *op);
-int expect_number(Token **token);
 // new node
 Node *new_node_num(int val);
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+Node *new_node(NodeKind kind);
 // parse
 Obj *parse(Token **token);
 

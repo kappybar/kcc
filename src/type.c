@@ -48,7 +48,7 @@ Type *copy_type(Type *ty) {
 Type *find_return_type(char *func_name, int func_name_len) {
     for (Obj *fn = globals;fn;fn = fn->next) {
         if (is_function(fn) && fn->len == func_name_len && strncmp(func_name, fn->name, func_name_len) == 0) {
-            return fn->return_type;
+            return fn->type->return_ty;
         }
     }
     error_type("implicit declaraton of function\n");
@@ -70,7 +70,7 @@ Node *zeros_like(Type *type) {
             cur->next = zeros_like(type->ptr_to);
             cur = cur->next;
         }
-        Node *node = new_node(NdInit, NULL, NULL);
+        Node *node = new_node(NdInit);
         node->body = head.next;
         return node;
     }
