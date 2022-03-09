@@ -483,10 +483,13 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// postfix = primary ( "[" expr "]"     | 
-//                     "(" argument ")" | 
-//                     "." ident        |
-//                      "->" ident )*
+// postfix = primary ( 
+//                      "[" expr "]"     | 
+//                      "(" argument ")" | 
+//                      "." ident        |
+//                      "->" ident 
+//                    )*
+//                    ("++" | "--")?
 Node *postfix(Token **token) {
     Node *node = primary(token);
     while (1) {
@@ -520,6 +523,12 @@ Node *postfix(Token **token) {
         }
 
         break;
+    }
+
+    if (consume(token, "++")) {
+        node = new_node_unary(NdPostInc, node);
+    } else if (consume(token, "--")) {
+        node = new_node_unary(NdPostDec, node);
     }
 
     return node;

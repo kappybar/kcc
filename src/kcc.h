@@ -159,6 +159,8 @@ typedef enum {
     NdLe,       // <=
     NdShl,      // <<
     NdSar,      // >> shift arithmetic right
+    NdPostInc,  // post ++
+    NdPostDec,  // post --
     NdAssign,   // =
     NdLvar,     // Local variable
     NdGvar,     // Global variable

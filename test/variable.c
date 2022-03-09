@@ -53,6 +53,16 @@ int main() {
     ASSERT(2, ({int a = 1,b = ++a; b;}));
     ASSERT(0, ({int a = 1; --a;}));
     ASSERT(0, ({int a = 1,b = --a; b;}));
+    ASSERT(1, ({int a = 1;int b = a++; b;}));
+    ASSERT(2, ({int a = 1;int b = a++; a;}));
+    ASSERT(1, ({int a = 1;int b = a--; b;}));
+    ASSERT(0, ({int a = 1;int b = a--; a;}));
+    ASSERT(3, ({char a = 1,b = 1; add(++a,b);}));
+    ASSERT(2, ({char a = 1,b = 1; add(a++,b);}));
+    ASSERT(1, ({char a = 1,b = 1; add(--a,b);}));
+    ASSERT(2, ({char a = 1,b = 1; add(a--,b);}));
+    ASSERT(2, ({int a[2]; a[0]=1; ++a[0];}));
+    ASSERT(2, ({int a[2]; a[0]=1; a[0]++; a[0];}));
 
     return 0;
 }

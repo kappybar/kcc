@@ -204,7 +204,9 @@ void display_node(Node *node, int indent) {
         display_child(node, indent);
         break;
     case NdLe:
-        fprintf(stderr, "Le\n");
+        fprintf(stderr, "Le");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdLt:
@@ -214,12 +216,28 @@ void display_node(Node *node, int indent) {
         display_child(node, indent);
         break;
     case NdShl : 
-        fprintf(stderr, "Shift Left\n");
+        fprintf(stderr, "Shift Left");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
         break;
     case NdSar : 
-        fprintf(stderr, "Shift Arithmetic Right\n");
+        fprintf(stderr, "Shift Arithmetic Right");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
+        break;
+    case NdPostInc:
+        fprintf(stderr, "Post Inc");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_node(node->lhs, indent + 1);
+        break;
+    case NdPostDec:
+        fprintf(stderr, "Post Dec");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_node(node->lhs, indent + 1);
         break;
     case NdAssign:
         fprintf(stderr, "Assign");

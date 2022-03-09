@@ -277,6 +277,13 @@ void add_type(Node *node) {
         }
         node->type = new_type(TyInt);
         break;
+    case NdPostDec:
+    case NdPostInc:
+        if (!is_integer(node->lhs->type) && node->lhs->type->kind != TyPtr) {
+            error_type("type error : cannot compare this two type\n");
+        }
+        node->type = node->lhs->type;
+        break;
     case NdAssign:
         if (!same_type(node->lhs->type, node->rhs->type)) {
             error_type("type error : cannot assign different type\n");

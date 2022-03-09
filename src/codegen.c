@@ -267,6 +267,28 @@ void codegen_expr(Node *node) {
             stack_push("  push rax");
         }
         return;
+    case NdPostInc: {
+        gen_addr(node->lhs);
+        stack_pop("  pop rax");
+        codegen_load(node->lhs->type, "rdi", "edi", "rax");
+        int size = sizeof_type(node->lhs->type);
+        println("  mov rcx, rdi");
+        println("  add rcx, %d", is_pointer(node->type) ? size : 1);
+        codegen_store(node->type, "rcx", "ecx", "cx", "cl", "rax");
+        stack_push("  push rdi");
+        return;
+        }
+    case NdPostDec: {
+        gen_addr(node->lhs);
+        stack_pop("  pop rax");
+        codegen_load(node->lhs->type, "rdi", "edi", "rax");
+        int size = sizeof_type(node->lhs->type);
+        println("  mov rcx, rdi");
+        println("  sub rcx, %d", is_pointer(node->type) ? size : 1);
+        codegen_store(node->type, "rcx", "ecx", "cx", "cl", "rax");
+        stack_push("  push rdi");
+        return;
+        }
     case NdAssign:
         gen_addr(node->lhs);
         codegen_expr(node->rhs);
