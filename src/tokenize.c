@@ -4,6 +4,14 @@ bool startwith(char *p, char *q) {
     return strncmp(p, q, strlen(q)) == 0;
 }
 
+Token *new_token(TokenKind kind, Token *cur, char *str) {
+    Token *token = calloc(1, sizeof(Token));
+    token->kind  = kind;
+    token->str   = str;
+    cur->next    = token;
+    return token;
+}
+
 int isreserved(char *p) {
     if (startwith(p, "<<=") || startwith(p, ">>=")) {
         return 3;
@@ -31,7 +39,9 @@ bool is_ident2(char *p) {
 }
 
 bool is_keyword(Token *token) {
-    char *keywords[] = {"return", "if", "else", "while", "for", "int", "sizeof", "char", "struct", "union", "short", "long", "void"};
+    char *keywords[] = {"return", "if", "else", "while", "for", "sizeof", 
+                        "int", "char", "short", "long", "void",
+                        "struct", "union" };
     for (int i = 0;i < sizeof(keywords) / sizeof(*keywords); i++) {
         if (token->len == strlen(keywords[i]) && strncmp(token->str, keywords[i], token->len) == 0) {
             return true;
@@ -97,7 +107,6 @@ Token *read_string(Token *cur, char *p) {
     cur->str = buf;
     cur->type = new_type_array(new_type(TyChar), len + 1);
     cur->len = end - start + 1;
-    // printf("%d", cur->len);
     return cur;
 }
 
@@ -121,16 +130,35 @@ Token *read_char(Token *cur, char *p) {
     return cur;
 }
 
-// curに新しいTokenを繋げる。
-// head -> ... -> cur
-// head -> ... -> cur -> token　になる。
-// tokenを返す。
-Token *new_token(TokenKind kind, Token *cur, char *str) {
-    Token *token = calloc(1, sizeof(Token));
-    token->kind  = kind;
-    token->str   = str;
-    cur->next    = token;
-    return token;
+int read_line_comment(char *p) {
+    char *q = p;
+    while(*p) {
+        if (*p == '\n') {
+            break;
+        }
+        p++;
+    } 
+    if (!(*p)) {
+        error_tokenize(p);
+    }
+    p++;
+    return p - q;
+}
+
+int read_block_comment(char *p) {
+    char *q = p;
+    p += 2;
+    while(*p) {
+        if (*p == '*' && *(p + 1) == '/') {
+            break;
+        }
+        p++;
+    }
+    if (!(*p)) {
+        error_tokenize(p);
+    }
+    p += 2;
+    return p - q;
 }
 
 Token *tokenize(char *p) {
@@ -169,32 +197,13 @@ Token *tokenize(char *p) {
 
         // line comment
         if (*p == '/' && *(p + 1) == '/') {
-            while(*p) {
-                if (*p == '\n') {
-                    break;
-                }
-                p++;
-            } 
-            if (!(*p)) {
-                error_tokenize(p);
-            }
-            p++;
+            p += read_line_comment(p);
             continue;
         }
 
         // block comment
         if (*p == '/' && *(p + 1) == '*') {
-            p += 2;
-            while(*p) {
-                if (*p == '*' && *(p + 1) == '/') {
-                    break;
-                }
-                p++;
-            }
-            if (!(*p)) {
-                error_tokenize(p);
-            }
-            p += 2;
+            p += read_block_comment(p);
             continue;
         }
 

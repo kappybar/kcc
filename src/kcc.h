@@ -35,11 +35,11 @@ struct Token {
     char *str;     
     int len;       
     Type *type;
-
+    
+    // TkNum
     int val;       
 };
 
-Token *new_token(TokenKind kind, Token *cur, char *str);
 Token *tokenize_file(char *path);
 
 //
