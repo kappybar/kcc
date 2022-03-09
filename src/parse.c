@@ -545,15 +545,16 @@ Node *unary(Token **token) {
             expect(token, "(");
             Type *type = typename(token);
             expect(token, ")");
-            return new_node_num(sizeof_type(type));
+            Node *node = new_node_num(sizeof_type(type));
+            node->type = new_type(TyLong);
+            return node;
         } else {
             // "sizeof" unary
             Node *node = unary(token);
             add_type(node);
-            if (!node->type) {
-                error_parse(*token, "expected expression\n");
-            }
-            return new_node_num(sizeof_type(node->type));
+            node = new_node_num(sizeof_type(node->type));
+            node->type = new_type(TyLong);
+            return node;
         }
     } else {
         return postfix(token);

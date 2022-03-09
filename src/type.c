@@ -227,7 +227,7 @@ void add_type(Node *node) {
 
     switch (node->kind) {
     case NdNum :
-        node->type = new_type(TyLong);
+        node->type = new_type(TyInt);
         break;
     case NdLvar:
     case NdGvar:
@@ -251,7 +251,7 @@ void add_type(Node *node) {
                 node->type = new_type_ptr(node->lhs->type->ptr_to);
                 break;
             default:
-                break;
+                error_type("type error : cannot add this two type\n");    
             }
         } else {
             error_type("type error : cannot add this two type\n");
@@ -266,7 +266,7 @@ void add_type(Node *node) {
         if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
             error_type("type error : cannot mul this two type\n");
         }
-        node->type = new_type(TyLong);
+        node->type = new_type(TyInt);
         break;
     case NdEq:
     case NdNeq:
@@ -275,7 +275,7 @@ void add_type(Node *node) {
         if (!same_type(node->lhs->type, node->rhs->type)) {
             error_type("type error : cannot compare this two type\n");
         }
-        node->type = new_type(TyLong);
+        node->type = new_type(TyInt);
         break;
     case NdAssign:
         if (!same_type(node->lhs->type, node->rhs->type)) {
