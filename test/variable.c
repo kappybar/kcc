@@ -63,6 +63,10 @@ int main() {
     ASSERT(2, ({char a = 1,b = 1; add(a--,b);}));
     ASSERT(2, ({int a[2]; a[0]=1; ++a[0];}));
     ASSERT(2, ({int a[2]; a[0]=1; a[0]++; a[0];}));
+    ASSERT(1, ({int a[3]={0,1,2};int *b = a; b++; *b;}));
+    ASSERT(1, ({int a[3]={0,1,2};int *b = a; ++b; *b;}));
+    ASSERT(0, ({int a[3]={0,1,2};int *b = a+1; b--; *b;}));
+    ASSERT(0, ({int a[3]={0,1,2};int *b = a+1; --b; *b;}));
 
     return 0;
 }
