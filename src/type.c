@@ -85,6 +85,9 @@ Node *zeros_like(Type *type) {
     case TyFunc : 
         error_type("func type has no value\n");
         return NULL;
+    case TyAbsent : 
+        error_type("absent type has no value\n");
+        return NULL;
     }
 }
 
@@ -106,7 +109,8 @@ int alignment(Type *ty) {
     case TyStruct:
         return ty->type_struct->align;
     case TyFunc:
-        error_type("cannot alignment func\n");
+    case TyAbsent:
+        error_type("cannot alignment this type\n");
         return 0;
     }
 }
@@ -130,7 +134,8 @@ int sizeof_type(Type *ty) {
     case TyStruct:
         return ty->type_struct->size;
     case TyFunc:
-        error_type("cannot get size of func\n");
+    case TyAbsent:
+        error_type("cannot get size of this type\n");
         return 0;
     }
 }
@@ -177,6 +182,28 @@ bool same_type(Type *ty1, Type *ty2) {
         return true;
     }
     return false;
+}
+
+Type *fill_absent_type(Type *type_absent, Type *type_fill) {
+    switch (type_absent->kind) {
+    case TyVoid:
+    case TyInt:
+    case TyChar:
+    case TyShort:
+    case TyLong:
+    case TyStruct:
+        return type_absent;
+    case TyPtr:
+    case TyArray:
+        type_absent->ptr_to = fill_absent_type(type_absent->ptr_to, type_fill);
+        return type_absent;
+    case TyAbsent:
+        type_absent = type_fill;
+        return type_absent;
+    case TyFunc:
+        type_absent->return_ty = fill_absent_type(type_absent->return_ty, type_fill);
+        return type_absent;
+    }
 }
 
 void add_type(Node *node) {

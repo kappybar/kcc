@@ -45,6 +45,9 @@ void display_token(Token *token) {
 void display_type_internal(Type *type) {
     if (!type) return;
     switch (type->kind) {
+    case TyAbsent:
+        fprintf(stderr, " absent");
+        return;
     case TyVoid:
         fprintf(stderr, " void");
         return;

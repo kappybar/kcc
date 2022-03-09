@@ -43,6 +43,7 @@ void stack_push(char *fmt, ...) {
 
 void codegen_gvar_init(Type *type, Node *init) {
     switch (type->kind) {
+    case TyAbsent:
     case TyFunc:
     case TyVoid :
         error_codegen();

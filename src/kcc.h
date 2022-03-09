@@ -56,6 +56,7 @@ typedef enum {
     TyStruct,
     TyVoid,
     TyFunc,
+    TyAbsent
 } TypeKind;
 
 
@@ -93,6 +94,7 @@ Type *new_type_struct(Struct *s);
 Type *new_type_fun(Type *return_ty, Type *params_ty);
 Type *copy_type(Type *ty);
 Node *zeros_like(Type *type);
+Type *fill_absent_type(Type *type_absent, Type *type_fill);
 int alignment(Type *ty);
 bool is_integer(Type *ty);
 bool is_pointer(Type *ty);
@@ -223,5 +225,6 @@ void error_type(char *fmt, ...);
 void display_obj(Obj *obj);
 void display_token(Token *token);
 void display_node(Node *node, int indent);
+void display_type(Type *type);
 void display_function(Obj *func);
 void display_program(Obj *func);

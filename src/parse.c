@@ -315,7 +315,6 @@ Node *new_node_lvar(Obj *obj) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = NdLvar;
     node->obj = obj;
-    node->type = copy_type(obj->type);
     return node;
 }
 
@@ -891,25 +890,34 @@ Type *declspec(Token **token) {
 //               | "(" declarator ")" ("[" number "]")*
 //               | "(" declarator ")" "(" params? ")"*
 Obj *direct_decl(Token **token, Type *type) {
-    // if (consume(token, "(")) {
-    //     Obj *obj = declarator(token, new_type(TyAbsent));
-    //     expect(token, ")");
+    if (consume(token, "(")) {
+        Obj *obj = declarator(token, new_type(TyAbsent));
+        expect(token, ")");
 
-    //     // function
-    //     if (consume(token, "(")) {
-    //         Obj *param = NULL;
-    //         if (!consume(token, ")")) {
-    //             param = params(token);
-    //             expect(token, ")");
-    //         }
-    //         // Obj *fn = new_fun(token_ident, type, param);
-    //         // add_gvar(fn);
-    //         return fn;
-    //     }
+        // function
+        if (consume(token, "(")) {
+            Obj *param = NULL;
+            Type *param_ty = NULL;
+            if (!consume(token, ")")) {
+                param_ty = params(token);
+                param = locals->objs;
+                expect(token, ")");
+            }
+            Type *ty = new_type_fun(type, param_ty);
+            obj->type = fill_absent_type(obj->type, ty);
+            return obj;
+        }
 
-    //     // obj->type = fill_absent_type(obj->type);
+        // obj
+        while (consume(token, "[")) {
+            int size = expect_number(token);
+            type = new_type_array(type, size);
+            expect(token, "]");
+        }
 
-    // } else {
+        obj->type = fill_absent_type(obj->type, type);
+        return obj;
+    } else {
         Token *token_ident = expect_ident(token);
 
         // function
@@ -934,7 +942,7 @@ Obj *direct_decl(Token **token, Type *type) {
         }
 
         return new_obj(token_ident, type);
-    // }
+    }
 }
 
 // initializer = assign

@@ -39,6 +39,9 @@ void swap(int *x, int *y) {
     return;
 }
 
+int (*f1())();
+int (*f2())[1];
+void (*signal(int x, void (*y)(int z)))(int w);
 
 int main() {
 
@@ -80,6 +83,10 @@ int main() {
     ASSERT(4 , sizeof(int));
     ASSERT(8 , sizeof(long));
     ASSERT(3, ({int a = 1,b = 3; swap(&a, &b); a;}));
+    ASSERT(0, ({ int (*x)[1]; 0; }));
+    ASSERT(0, ({ int (*x)(); 0; }));
+    ASSERT(0, ({ int (**x)(); 0; }));
+    ASSERT(0, ({ int (*x[1])(); 0; }));
     
     return 0;
 }
