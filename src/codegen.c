@@ -239,6 +239,17 @@ void codegen_stmt(Node *node) {
         println(".Lend%d:", cnt);
         return;
     }
+    case NdDoWhile : {
+        int cnt = counter();
+        println(".Lcond%d:", cnt);
+        codegen_stmt(node->then);
+        codegen_expr(node->cond);
+        stack_pop("  pop rax # cond%d", cnt);
+        println("  cmp rax, 0");
+        println("  jne .Lcond%d", cnt);
+        println(".Lend%d:", cnt);
+        return;
+    }
     case NdBlock :
         for (Node *cur = node->body;cur;cur = cur->next) {
             codegen_stmt(cur);
@@ -354,6 +365,7 @@ void codegen_expr(Node *node) {
     case NdBlock:
     case NdIf:
     case NdFor:
+    case NdDoWhile:
         error("expect expression, but statement");
     default:
         break;

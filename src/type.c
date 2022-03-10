@@ -303,6 +303,7 @@ void add_type(Node *node) {
     case NdFor:
     case NdReturn:
     case NdIf:
+    case NdDoWhile:
     case NdInit:
         node->type = new_type(TyVoid);
         break;

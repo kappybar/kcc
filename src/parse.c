@@ -814,6 +814,7 @@ Node *expr(Token **token) {
 //        | "return" expr? ";"
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
 //        | "while" "(" expr ")" stmt 
+//        | "do" stmt "while" "(" expr ")"
 //        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //        | "{" compound_stmt
 Node *stmt(Token **token) {
@@ -844,6 +845,15 @@ Node *stmt(Token **token) {
         node->cond = expr(token);
         expect(token, ")");
         node->then = stmt(token);
+        return node;
+    }
+    if (consume_keyword(token, "do")) {
+        Node *node = new_node(NdDoWhile);
+        node->then = stmt(token);
+        expect_keyword(token, "while");
+        expect(token, "(");
+        node->cond = expr(token);
+        expect(token, ")");
         return node;
     }
     if (consume_keyword(token, "for")) {

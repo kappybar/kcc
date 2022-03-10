@@ -40,7 +40,8 @@ bool is_ident2(char *p) {
 }
 
 bool is_keyword(Token *token) {
-    char *keywords[] = {"return", "if", "else", "while", "for", "sizeof", 
+    char *keywords[] = {"return", "if", "else", "while", "for", "do",
+                        "sizeof", 
                         "int", "char", "short", "long", "void",
                         "struct", "union", "enum", "typedef" };
     for (int i = 0;i < sizeof(keywords) / sizeof(*keywords); i++) {

@@ -185,6 +185,7 @@ typedef enum {
     NdReturn,   // return
     NdIf,       // if
     NdFor,      // for
+    NdDoWhile,  // do while 
     NdBlock,    // { .. }
     NdDeref,    // *
     NdRef,      // &
@@ -202,7 +203,7 @@ struct Node {
     Node *lhs; // left hand side
     Node *rhs; // right hand side
     
-    // NdIf, NdFor
+    // NdIf, NdFor, NdDoWhile
     Node *cond;
     Node *then;
     Node *els;

@@ -21,6 +21,8 @@ int main() {
     ASSERT(4, ({ 1,2,3,4;}));
     ASSERT(2, ({int i = 0; i=i+1,i=i+1; i;}));
     ASSERT(1, ({int a[3] = {1,2,3}; a[1,2] = 1; a[2];}));
+    ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); s;}));
+    ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); i;}));
 
     return 0;
 }
