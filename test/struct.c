@@ -81,6 +81,7 @@ int main() {
     ASSERT(1, ({ struct s6 *x; struct s6 {int a;}; struct s6 y; x = &y; x->a = 1; x->a; }));
     ASSERT(16, sizeof(struct Node));
     ASSERT(0, ({struct Node l, r, nd;nd.lhs = &l;nd.rhs = &r; 0;}));
+    ASSERT(0, ({enum e3 x; enum e3 {E5, E6}; x = E5; x;}));
     
 
 

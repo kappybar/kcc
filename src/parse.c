@@ -28,6 +28,7 @@ Obj *new_string(Token *token);
 Struct *new_struct_or_union(Token *token_ident);
 void add_member_struct(Struct *st, Obj *member);
 void add_member_union(Struct *st, Obj *member);
+Enum *new_enum(Token *token);
 
 // new node
 Node *new_node_num(int val);
@@ -65,7 +66,7 @@ Node *init_assign(Node *var, Node *init_value);
 Struct *struct_spec(Token **token);
 void struct_union_declaration(Token **token, Struct *st, bool is_union);
 Enum *enum_spec(Token **token);
-Enum *enum_list(Token **token, Token *token_enum);
+void enum_list(Token **token, Enum *enm);
 Type *typename(Token **token);
 Type *typespec(Token **token);
 Type *params(Token **token);
@@ -347,11 +348,10 @@ void add_member_union(Struct *uni, Obj *member) {
     return;
 }
 
-Enum *new_enum(Token *token, Obj *enum_list) {
+Enum *new_enum(Token *token) {
     Enum *enm = calloc(1, sizeof(Enum));
     enm->name = token->str;
     enm->name_len = token->len;
-    enm->enum_list = enum_list;
 
     enm->next = defined_enums;
     defined_enums = enm;
@@ -1073,19 +1073,19 @@ void struct_union_declaration(Token **token, Struct *st, bool is_union) {
 Enum *enum_spec(Token **token) {
     expect_keyword(token, "enum");
     Token *token_ident = expect_ident(token);
-    if (consume(token, "{")) {
-        enum_list(token, token_ident);
-        expect(token, "}");
-    }
     Enum *enm = find_enum(token_ident);
     if (!enm) {
-        error_at((*token)->str, "unknown type name");
+        enm = new_enum(token_ident);
+    }
+    if (consume(token, "{")) {
+        enum_list(token, enm);
+        expect(token, "}");
     }
     return enm;
 }
 
 // enum_list = ident ("," ident)* ","?
-Enum *enum_list(Token **token, Token *token_enum) {
+void enum_list(Token **token, Enum *enm) {
     int value = 0;
     Obj head;
     Obj *cur = &head;
@@ -1107,8 +1107,8 @@ Enum *enum_list(Token **token, Token *token_enum) {
         cur = cur->next;
     }
 
-    Enum *enm = new_enum(token_enum, head.next);
-    return enm;
+    enm->enum_list = head.next;
+    return;
 }
 
 // declspec = typespec
