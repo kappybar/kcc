@@ -25,8 +25,9 @@ void add_gvar(Obj *obj);
 Obj *new_obj(Token *token, Type *type);
 Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty);
 Obj *new_string(Token *token);
-Struct *new_struct(Token *token_ident, Obj *member);
-Struct *new_union(Token *token_ident, Obj *member);
+Struct *new_struct_or_union(Token *token_ident);
+void add_member_struct(Struct *st, Obj *member);
+void add_member_union(Struct *st, Obj *member);
 
 // new node
 Node *new_node_num(int val);
@@ -62,7 +63,7 @@ Node *init_assign(Node *var, Node *init_value);
 
 // declare
 Struct *struct_spec(Token **token);
-Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union);
+void struct_union_declaration(Token **token, Struct *st, bool is_union);
 Enum *enum_spec(Token **token);
 Enum *enum_list(Token **token, Token *token_enum);
 Type *typename(Token **token);
@@ -297,52 +298,53 @@ Obj *new_string(Token *token) {
     return obj;
 }
 
-Struct *new_struct(Token *token_ident, Obj *member) {
-    Struct *new_st = calloc(1, sizeof(Struct));
-    new_st->member = member;
-    new_st->name = token_ident->str;
-    new_st->name_len = token_ident->len;
+Struct *new_struct_or_union(Token *token_ident) {
+    Struct *st = calloc(1, sizeof(Struct));
+    st->name = token_ident->str;
+    st->name_len = token_ident->len;
+    st->align = 1;
+
+    st->next = defined_structs;
+    defined_structs = st;
+    return st;
+}
+
+void add_member_struct(Struct *st, Obj *member) {
+    st->member = member;
     
     // calculate offset, align, size
     int offset = 0;
-    for (Obj *obj = new_st->member;obj;obj = obj->next) {
+    for (Obj *obj = st->member;obj;obj = obj->next) {
         int align = alignment(obj->type);
         offset = align_to(offset, align);
         obj->offset = offset;
         offset += sizeof_type(obj->type);
-        if (new_st->align < align) {
-            new_st->align = align;
+        if (st->align < align) {
+            st->align = align;
         }
     }
-    new_st->size = offset;
+    st->size = offset;
 
-    new_st->next = defined_structs;
-    defined_structs = new_st;
-    return new_st;
+    return;
 }
 
-Struct *new_union(Token *token_ident, Obj *member) {
-    Struct *new_uni = calloc(1, sizeof(Struct));
-    new_uni->member = member;
-    new_uni->name = token_ident->str;
-    new_uni->name_len = token_ident->len;
+void add_member_union(Struct *uni, Obj *member) {
+    uni->member = member;
 
     // calculate offset, align, size
-    for (Obj *obj = new_uni->member;obj;obj = obj->next) {
+    for (Obj *obj = uni->member;obj;obj = obj->next) {
         int align = alignment(obj->type);
         int size = sizeof_type(obj->type);
-        if (new_uni->align < align) {
-            new_uni->align = align;
+        if (uni->align < align) {
+            uni->align = align;
         }
-        if (new_uni->size < size) {
-            new_uni->size = size;
+        if (uni->size < size) {
+            uni->size = size;
         }
         obj->offset = 0;
     }
 
-    new_uni->next = defined_structs;
-    defined_structs = new_uni;
-    return new_uni;
+    return;
 }
 
 Enum *new_enum(Token *token, Obj *enum_list) {
@@ -1016,27 +1018,27 @@ Type *typespec(Token **token) {
 Struct *struct_spec(Token **token) {
     if (consume_keyword(token, "struct")) {
         Token *token_ident = expect_ident(token);
+        Struct *st = find_struct(token_ident);
+        if (!st) {
+            st = new_struct_or_union(token_ident);
+        } 
         if (consume(token, "{")) {
-            struct_union_declaration(token, token_ident, false);
+            struct_union_declaration(token, st, false);
             expect(token, "}");
         }
-        Struct *s = find_struct(token_ident);
-        if (!s) {
-            error_at((*token)->str, "unknown type name");
-        } 
-        return s;
+        return st;
     }
     if (consume_keyword(token, "union")) {
         Token *token_ident = expect_ident(token);
+        Struct *uni = find_struct(token_ident);
+        if (!uni) {
+            uni = new_struct_or_union(token_ident);
+        } 
         if (consume(token, "{")) {
-            struct_union_declaration(token, token_ident, true);
+            struct_union_declaration(token, uni, true);
             expect(token, "}");
         }
-        Struct *s = find_struct(token_ident);
-        if (!s) {
-            error_at((*token)->str, "unknown type name");
-        } 
-        return s;
+        return uni;
     }
     error_at((*token)->str, "this is not sturct or union type");
     return NULL;
@@ -1044,7 +1046,7 @@ Struct *struct_spec(Token **token) {
 
 
 // struct_union_declaration = (declspce declarator ";")* 
-Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_union) {
+void struct_union_declaration(Token **token, Struct *st, bool is_union) {
     Obj head;
     Obj *cur = &head;
 
@@ -1060,9 +1062,9 @@ Struct *struct_union_declaration(Token **token, Token *token_ident, bool is_unio
     }
 
     if (is_union) {
-        return new_union(token_ident, head.next);
+        add_member_union(st, head.next);
     } else {
-        return new_struct(token_ident, head.next);
+        add_member_struct(st, head.next);
     }
 }
 
@@ -1190,6 +1192,7 @@ Node *declaration(Token **token, bool is_global) {
     Type *base_type = declspec(token);
 
     Node head;
+    head.next = NULL;
     Node *cur = &head;
 
     int i = 0;
@@ -1210,7 +1213,7 @@ Node *declaration(Token **token, bool is_global) {
         }
     
     }
-
+    
     Node *node = new_node(NdBlock);
     node->body = head.next;
     return node;

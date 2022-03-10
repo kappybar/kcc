@@ -46,6 +46,11 @@ enum e2 {
 
 enum e1 eg;
 
+struct Node {
+    struct Node *lhs;
+    struct Node *rhs;
+};
+
 int main() {
 
     ASSERT(0, ({struct s1 a; 0;}));
@@ -73,8 +78,12 @@ int main() {
     ASSERT(1, ({int x;x = E_1;x;}));
     ASSERT(1, ({eg = E_1;eg;}));
     ASSERT(4, sizeof(enum e1));
+    ASSERT(1, ({ struct s6 *x; struct s6 {int a;}; struct s6 y; x = &y; x->a = 1; x->a; }));
+    ASSERT(16, sizeof(struct Node));
+    ASSERT(0, ({struct Node l, r, nd;nd.lhs = &l;nd.rhs = &r; 0;}));
     
 
 
     return 0;
 }
+
