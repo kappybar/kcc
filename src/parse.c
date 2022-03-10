@@ -7,6 +7,8 @@ Scope *locals = &(Scope){};
 Scope *fun_locals = &(Scope){};
 Obj *globals;
 
+Node *const_eval(Node *node);
+
 // new scope
 Scope *next_locals();
 void prev_locals(Scope *new_locals);
@@ -55,6 +57,7 @@ Node *shift(Token **token);
 Node *relational (Token **token);
 Node *equality(Token **token);
 Node *assign(Token **token);
+Node *const_expr(Token **token);
 Node *expr(Token **token);
 
 // stmt
@@ -453,6 +456,160 @@ bool is_typename(Token *token) {
     return false;
 }
 
+Node *const_eval(Node *node) {
+    switch (node->kind) {
+    case NdNum:
+        return node;
+    case NdAdd: {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val + rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdSub: {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val - rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdMul: {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val * rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdDiv : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            if (rhs->val == 0) {
+                error("zero division error");
+            }
+            return new_node_num(lhs->val / rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdMod : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            if (rhs->val == 0) {
+                error("zero division error");
+            }
+            return new_node_num(lhs->val % rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdEq : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val == rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdNeq : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val != rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdLt : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val < rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdLe : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val <= rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdShl : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val << rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdSar : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val >> rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdComma: {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        return rhs;
+    }
+    default: {
+        error("not a compile time constant");
+    }
+    }
+    return NULL;
+}
+
 // argument = assign ("," assign) *
 Node *argument(Token **token) {
     Node head;
@@ -801,6 +958,11 @@ Node *assign(Token **token) {
     return node;
 }
 
+// const_expr = equality
+Node *const_expr(Token **token) {
+    return equality(token);
+}
+
 // expr = assign (, assign)*
 Node *expr(Token **token) {
     Node *node = assign(token);
@@ -1139,22 +1301,23 @@ void enum_list(Token **token, Enum *enm) {
     Obj head;
     Obj *cur = &head;
 
-    Token *token_ident = expect_ident(token);
-    Obj *obj = new_obj(token_ident, new_type(TyInt));
-    obj->enum_value = value++;
-    cur->next = obj;
-    cur = cur->next;
-
-    while (consume(token, ",")) {
+    do {
         Token *token_ident = consume_ident(token);
         if (!token_ident) {
             break;
         }
+
         Obj *obj = new_obj(token_ident, new_type(TyInt));
+        if (consume(token, "=")) {
+            Node *node = const_expr(token);
+            node = const_eval(node);
+            value = node->val;
+        }
         obj->enum_value = value++;
+
         cur->next = obj;
         cur = cur->next;
-    }
+    } while (consume(token, ","));
 
     enm->enum_list = head.next;
     return;

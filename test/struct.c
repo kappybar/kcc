@@ -46,6 +46,23 @@ enum e2 {
 
 enum e1 eg;
 
+enum e4 {
+    E7 = 3,
+    E8 = 1+3,
+    E9 = 3-1,
+    E10 = 1*3,
+    E11 = 5/2,
+    E12 = 5%2,
+    E13 = 1 == 1,
+    E14 = 1 != 1,
+    E15 = 1 < 3,
+    E16 = 1 <= 1,
+    E17 = 1 << 3,
+    E18 = 10 >> 1,
+    E19 = (1,2,3,4),
+    E20 = (1+2*3)+3-(1-3),
+};
+
 struct Node {
     struct Node *lhs;
     struct Node *rhs;
@@ -90,6 +107,21 @@ int main() {
     ASSERT(0, ({struct Node l, r, nd;nd.lhs = &l;nd.rhs = &r; 0;}));
     ASSERT(0, ({enum e3 x; enum e3 {E5, E6}; x = E5; x;}));
     ASSERT(2, ({List a,b; a.car = 1; b.car = 2; a.cdr = &b; a.cdr->car;}));
+    ASSERT(3, E7);
+    ASSERT(4, E8);
+    ASSERT(2, E9);
+    ASSERT(3, E10);
+    ASSERT(2, E11);
+    ASSERT(1, E12);
+    ASSERT(1, E13);
+    ASSERT(0, E14);
+    ASSERT(1, E15);
+    ASSERT(1, E16);
+    ASSERT(8, E17);
+    ASSERT(5, E18);
+    ASSERT(4, E19);
+    ASSERT(12, E20);
+
 
 
     return 0;
