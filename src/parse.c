@@ -2,6 +2,7 @@
 
 Struct *defined_structs;
 Enum *defined_enums;
+Typdef *defined_typdefs;
 Scope *locals = &(Scope){};
 Scope *fun_locals = &(Scope){};
 Obj *globals;
@@ -18,6 +19,7 @@ Struct *find_struct(Token *token);
 Obj *find_member(Struct *st, Token *token);
 Enum *find_enum(Token *token);
 Obj *find_enum_const(Token *token);
+Type *find_typdef(Token *token);
 
 // new obj
 void add_lvar(Obj *obj);
@@ -29,6 +31,7 @@ Struct *new_struct_or_union(Token *token_ident);
 void add_member_struct(Struct *st, Obj *member);
 void add_member_union(Struct *st, Obj *member);
 Enum *new_enum(Token *token);
+void add_typdef(Obj *obj);
 
 // new node
 Node *new_node_num(int val);
@@ -139,6 +142,15 @@ void expect_keyword(Token **token, char *keyword) {
     return;
 }
 
+Type *consume_typdef(Token **token) {
+    Type *type = find_typdef(*token);
+    if (!type) {
+        return NULL;
+    }
+    *token = (*token)->next;
+    return type;
+}
+
 Scope *next_locals() {
     Scope *new_locals = calloc(1, sizeof(Scope));
     new_locals->prev = locals;
@@ -234,6 +246,15 @@ Obj *find_enum_const(Token *token) {
         }
     }
     error_at(token->str, "undefinesd variable\n");
+    return NULL;
+}
+
+Type *find_typdef(Token *token) {
+    for (Typdef *typdef = defined_typdefs;typdef;typdef = typdef->next) {
+        if (typdef->name_len == token->len && strncmp(typdef->name, token->str, token->len) == 0) {
+            return typdef->type;
+        }
+    }
     return NULL;
 }
 
@@ -357,6 +378,17 @@ Enum *new_enum(Token *token) {
     defined_enums = enm;
     return enm;
 }
+
+void add_typdef(Obj *obj) {
+    Typdef *typdef = calloc(1, sizeof(Typdef));
+    typdef->name = obj->name;
+    typdef->name_len = obj->len;
+    typdef->type = obj->type;
+
+    typdef->next = defined_typdefs;
+    defined_typdefs = typdef;
+    return;
+}
  
 Node *new_node_num(int val) {
     Node *node = calloc(1, sizeof(Node));
@@ -414,6 +446,9 @@ bool is_typename(Token *token) {
         if (equal(token, typenames[i])) {
             return true;
         }
+    }
+    if (find_typdef(token) && !find_obj(token, false)) {
+        return true;
     }
     return false;
 }
@@ -854,7 +889,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (is_typename(*token)) {
+        if (is_typename(*token) || equal(*token, "typedef")) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -986,6 +1021,7 @@ Type *typename(Token **token) {
 //            | "char" 
 //            | struct_spec
 //            | enum_spec
+//            | typedef_name
 Type *typespec(Token **token) {
     if (consume_keyword(token, "void")) {
         return new_type(TyVoid);
@@ -1009,8 +1045,11 @@ Type *typespec(Token **token) {
         enum_spec(token);
         return new_type(TyInt);
     }
-    error_at((*token)->str, "unknown type name");
-    return NULL;
+    Type *type = consume_typdef(token);
+    if (!type) {
+        error_at((*token)->str, "unknown type name");
+    }
+    return type;
 }
 
 // struct_spec = "struct" ident ("{" struct_union_declaration "}")? 
@@ -1111,9 +1150,34 @@ void enum_list(Token **token, Enum *enm) {
     return;
 }
 
-// declspec = typespec
+// declspec = (typespec | "typedef")*
 Type *declspec(Token **token) {
-    return typespec(token);
+    Type *type = NULL;
+    bool is_typdef = false;
+
+    while (1) {
+        if (consume_keyword(token, "typedef")) {
+            is_typdef = true;
+            continue;
+        }
+        if (is_typename(*token)) {
+            if (find_typdef(*token) && type) {
+                break;
+            } else if (type) {
+                error_at((*token)->str, "too many type name");
+            }
+            type = typespec(token);
+            continue;
+        }
+        break;
+    }
+
+    if (!type) {
+        error_at((*token)->str, "empty type name");
+    }
+    type->is_typdef = is_typdef;
+
+    return type;
 }
 
 // direct_declarator =   ident
@@ -1163,12 +1227,13 @@ Obj *direct_declarator(Token **token, Type *type) {
                 expect(token, ")");
             }
             Obj *fn = new_fun(token_ident, type, param, param_ty);
-            add_gvar(fn);
             return fn;
         }
 
         // obj
-        find_obj(token_ident, true); // redeclaration = true
+        if (!type->is_typdef) {
+            find_obj(token_ident, true); // redeclaration = true
+        }
         while (consume(token, "[")) {
             int size = expect_number(token);
             type = new_type_array(type, size);
@@ -1202,14 +1267,19 @@ Node *declaration(Token **token, bool is_global) {
         }
 
         Obj *obj = declarator(token, base_type);
-        add_lvar(obj);
-        Node *var = new_node_obj(obj);
-        if (consume(token, "=")) {
-            cur->next = init_assign(var, initializer(token));
-            cur = cur->next;
+
+        if (base_type->is_typdef) {
+            add_typdef(obj);
         } else {
-            cur->next = var;
-            cur = cur->next;
+            add_lvar(obj);
+            Node *var = new_node_obj(obj);
+            if (consume(token, "=")) {
+                cur->next = init_assign(var, initializer(token));
+                cur = cur->next;
+            } else {
+                cur->next = var;
+                cur = cur->next;
+            }
         }
     
     }
@@ -1244,6 +1314,7 @@ void def(Token **token) {
     Obj *fn = declarator(token, type);
 
     if (is_function(fn)) {
+        add_gvar(fn);
         if (consume(token, ";")) {
             locals->prev = fun_locals;
             fun_locals = locals;
@@ -1267,6 +1338,9 @@ void def(Token **token) {
             fn->is_defined = true;
             allocate_stack_offset(fn);
         }
+    } else if (type->is_typdef) {
+        add_typdef(fn);
+        expect(token, ";");
     } else {
         add_gvar(fn);
         // global variable initialization

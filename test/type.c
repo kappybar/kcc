@@ -43,6 +43,9 @@ int (*f1())();
 int (*f2())[1];
 void (*signal(int x, void (*y)(int z)))(int w);
 
+typedef int I;
+typedef short S;
+
 int main() {
 
     ASSERT(4 , ({char x; x = 4; x; }));
@@ -87,6 +90,11 @@ int main() {
     ASSERT(0, ({ int (*x)(); 0; }));
     ASSERT(0, ({ int (**x)(); 0; }));
     ASSERT(0, ({ int (*x[1])(); 0; }));
+    ASSERT(1, ({I x = 1; x;}));
+    ASSERT(1, ({S x = 1; x;}));
+    ASSERT(4, sizeof(I));
+    ASSERT(2, sizeof(S));
+    ASSERT(1, ({int I = 1;int y = 1; I * y;}));
     
     return 0;
 }

@@ -51,6 +51,13 @@ struct Node {
     struct Node *rhs;
 };
 
+typedef struct List List;
+
+struct List {
+    int car;
+    List *cdr;
+};
+
 int main() {
 
     ASSERT(0, ({struct s1 a; 0;}));
@@ -82,7 +89,7 @@ int main() {
     ASSERT(16, sizeof(struct Node));
     ASSERT(0, ({struct Node l, r, nd;nd.lhs = &l;nd.rhs = &r; 0;}));
     ASSERT(0, ({enum e3 x; enum e3 {E5, E6}; x = E5; x;}));
-    
+    ASSERT(2, ({List a,b; a.car = 1; b.car = 2; a.cdr = &b; a.cdr->car;}));
 
 
     return 0;

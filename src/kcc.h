@@ -12,6 +12,7 @@ typedef struct Token Token;
 typedef struct Type Type;
 typedef struct Struct Struct;
 typedef struct Enum Enum;
+typedef struct Typdef Typdef;
 typedef struct Obj Obj;
 typedef struct Scope Scope;
 typedef struct Node Node;
@@ -84,6 +85,9 @@ struct Type {
 
     // TyStruct
     Struct *type_struct;
+
+    // 
+    bool is_typdef;
 };
 
 Type *new_type(TypeKind kind);
@@ -147,6 +151,13 @@ struct Enum {
     int name_len;
     Enum *next;
     Obj *enum_list;
+};
+
+struct Typdef {
+    char *name;
+    int name_len;
+    Typdef *next;
+    Type *type;
 };
 
 extern Scope *locals;
