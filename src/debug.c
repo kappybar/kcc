@@ -299,6 +299,28 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "Then\n");
         display_node(node->then, indent + 1);
         break;
+    case NdSwitch:
+        fprintf(stderr, "Switch");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_space(indent);
+        fprintf(stderr, "Cond\n");
+        display_node(node->cond, indent + 1);
+        display_space(indent);
+        fprintf(stderr, "Then\n");
+        display_node(node->then, indent + 1);
+        break;
+    case NdCase:
+        fprintf(stderr, "Case");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_space(indent);
+        fprintf(stderr, "Cond\n");
+        display_node(node->cond, indent + 1);
+        display_space(indent);
+        fprintf(stderr, "Then\n");
+        display_node(node->then, indent + 1);
+        break;
     case NdBlock:
         fprintf(stderr, "Block");
         display_type(node->type);

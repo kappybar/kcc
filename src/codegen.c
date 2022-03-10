@@ -250,6 +250,31 @@ void codegen_stmt(Node *node) {
         println(".Lend%d:", cnt);
         return;
     }
+    case NdSwitch : {
+        int cnt = counter();
+        codegen_expr(node->cond);
+        for (Node *nd = node->cases;nd;nd = nd->next) {
+            codegen_expr(nd->cond);
+            stack_pop("  pop rdi");
+            stack_pop("  pop rax");
+            println("  cmp rax, rdi");
+            stack_push("  push rax");
+            println("  je %s", nd->label);
+        }  
+        println("  jmp .Lend%d", cnt);  
+        codegen_stmt(node->then);
+        println(".Lend%d:", cnt);
+        stack_pop("  pop rax"); 
+        return;  
+    }
+    case NdCase : {
+        if (!node->label) {
+            error("case label not within switch statement\n");
+        }
+        println("%s:", node->label);
+        codegen_stmt(node->then);
+        return;
+    }
     case NdBlock :
         for (Node *cur = node->body;cur;cur = cur->next) {
             codegen_stmt(cur);
@@ -366,6 +391,8 @@ void codegen_expr(Node *node) {
     case NdIf:
     case NdFor:
     case NdDoWhile:
+    case NdSwitch:
+    case NdCase:
         error("expect expression, but statement");
     default:
         break;

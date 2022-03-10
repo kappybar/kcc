@@ -304,6 +304,8 @@ void add_type(Node *node) {
     case NdReturn:
     case NdIf:
     case NdDoWhile:
+    case NdSwitch:
+    case NdCase:
     case NdInit:
         node->type = new_type(TyVoid);
         break;

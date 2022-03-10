@@ -23,6 +23,15 @@ int main() {
     ASSERT(1, ({int a[3] = {1,2,3}; a[1,2] = 1; a[2];}));
     ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); s;}));
     ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); i;}));
+    ASSERT(3, ({int i = 0; switch (0) {case 0:i++; case 1:i++; case 2: i++;} i;}));
+    ASSERT(2, ({int i = 0; switch (1) {case 0:i++; case 1:i++; case 2: i++;} i;}));
+    ASSERT(1, ({int i = 0; switch (2) {case 0:i++; case 1:i++; case 2: i++;} i;}));
+    ASSERT(0, ({int i = 0; switch (3) {case 0:i++; case 1:i++; case 2: i++;} i;}));
+    ASSERT(1, ({int i = 0; switch (0) case 0: i++; i; }));
+    ASSERT(0, ({int i = 0; switch (1) case 0: i++; i; }));
+    ASSERT(0, ({int i = 0; switch (1) i = 3; i; }));
+    ASSERT(3, ({int i = 0;int k = 0; switch (k) {case 0:i++; case 1:i++; case 2: i++;} i; }));
+    ASSERT(2, ({int i = 0;int k = 1; switch (k) {case 0:i++; case 1:i++; case 2: i++;} i; }));
 
     return 0;
 }
