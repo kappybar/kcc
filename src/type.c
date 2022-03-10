@@ -51,7 +51,7 @@ Type *find_return_type(char *func_name, int func_name_len) {
             return fn->type->return_ty;
         }
     }
-    error_type("implicit declaraton of function\n");
+    error("implicit declaraton of function\n");
     return NULL;
 }
 
@@ -75,18 +75,18 @@ Node *zeros_like(Type *type) {
         return node;
     }
     case TyStruct : {
-        error_type("THIS IS NOT IMPLEMENTED");
+        error("THIS IS NOT IMPLEMENTED");
         return NULL;
     }
     case TyVoid : {
-        error_type("void type has no value\n");
+        error("void type has no value\n");
         return NULL;
     }
     case TyFunc : 
-        error_type("func type has no value\n");
+        error("func type has no value\n");
         return NULL;
     case TyAbsent : 
-        error_type("absent type has no value\n");
+        error("absent type has no value\n");
         return NULL;
     }
 }
@@ -110,7 +110,7 @@ int alignment(Type *ty) {
         return ty->type_struct->align;
     case TyFunc:
     case TyAbsent:
-        error_type("cannot alignment this type\n");
+        error("cannot alignment this type\n");
         return 0;
     }
 }
@@ -135,7 +135,7 @@ int sizeof_type(Type *ty) {
         return ty->type_struct->size;
     case TyFunc:
     case TyAbsent:
-        error_type("cannot get size of this type\n");
+        error("cannot get size of this type\n");
         return 0;
     }
 }
@@ -144,7 +144,7 @@ int ptr_to_size(Type *ty) {
     if (ty->ptr_to) {
         return sizeof_type(ty->ptr_to);
     } else {
-        error_type("type error\n");
+        error("type error\n");
         return 0;
     }
 }
@@ -251,10 +251,10 @@ void add_type(Node *node) {
                 node->type = new_type_ptr(node->lhs->type->ptr_to);
                 break;
             default:
-                error_type("type error : cannot add this two type\n");    
+                error("type error : cannot add this two type\n");    
             }
         } else {
-            error_type("type error : cannot add this two type\n");
+            error("type error : cannot add this two type\n");
         }
 
         break;
@@ -264,7 +264,7 @@ void add_type(Node *node) {
     case NdShl:
     case NdSar:
         if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
-            error_type("type error : cannot mul this two type\n");
+            error("type error : cannot mul this two type\n");
         }
         node->type = new_type(TyInt);
         break;
@@ -273,26 +273,26 @@ void add_type(Node *node) {
     case NdLt:
     case NdLe:
         if (!same_type(node->lhs->type, node->rhs->type)) {
-            error_type("type error : cannot compare this two type\n");
+            error("type error : cannot compare this two type\n");
         }
         node->type = new_type(TyInt);
         break;
     case NdPostDec:
     case NdPostInc:
         if (!is_integer(node->lhs->type) && node->lhs->type->kind != TyPtr) {
-            error_type("type error : cannot compare this two type\n");
+            error("type error : cannot compare this two type\n");
         }
         node->type = node->lhs->type;
         break;
     case NdAssign:
         if (!same_type(node->lhs->type, node->rhs->type)) {
-            error_type("type error : cannot assign different type\n");
+            error("type error : cannot assign different type\n");
         }
         node->type = node->lhs->type;
         break;
     case NdDeref:
         if (node->lhs->type->kind != TyPtr && node->lhs->type->kind != TyArray) {
-            error_type("type error : cannot deref this type\n");
+            error("type error : cannot deref this type\n");
         }
         node->type = node->lhs->type->ptr_to;
         break;

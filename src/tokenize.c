@@ -79,7 +79,7 @@ char *read_string_end(char *start) {
     char *p = start+1;
     while ((*p) != '"') {
         if (*p == '\0' || *p == '\n') {
-            error_tokenize(p);
+            error_at(p, "missing terminationg \" character ");
         }
         if (*p == '\\') {
             p++;
@@ -125,7 +125,7 @@ Token *read_char(Token *cur, char *p) {
     } 
 
     if (*p != '\'') {
-        error_tokenize(p);
+        error_at(p, "missing terminating ' character");
     }
 
     return cur;
@@ -140,7 +140,7 @@ int read_line_comment(char *p) {
         p++;
     } 
     if (!(*p)) {
-        error_tokenize(p);
+        error_at(p, "unterminated comment");
     }
     p++;
     return p - q;
@@ -156,7 +156,7 @@ int read_block_comment(char *p) {
         p++;
     }
     if (!(*p)) {
-        error_tokenize(p);
+        error_at(p, "unterminated comment");
     }
     p += 2;
     return p - q;
@@ -226,7 +226,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        error_tokenize(p);
+        error_at(p, "cannnot tokenize");
     }
 
     new_token(TkEof, cur, p);
@@ -268,7 +268,9 @@ char *read_file(char *path) {
     return buf;
 }
 
+char *user_input;
+
 Token *tokenize_file(char *path) {
-    char *buf = read_file(path);
-    return tokenize(buf);
+    user_input = read_file(path);
+    return tokenize(user_input);
 }

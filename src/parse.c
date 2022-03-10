@@ -83,7 +83,7 @@ bool at_eof(Token *token) {
 }
 
 int expect_number(Token **token) {
-    if ((*token)->kind != TkNum) error_parse(*token, "expect number\n");
+    if ((*token)->kind != TkNum) error_at((*token)->str, "expect number");
     int val = (*token)->val;
     *token = (*token)->next;
     return val;
@@ -103,7 +103,7 @@ bool consume(Token **token, char *op) {
 }
 
 void expect(Token **token, char *op) {
-    if ((*token)->kind != TkReserved || !equal(*token, op)) error_parse(*token, "expect %s\n", op);
+    if ((*token)->kind != TkReserved || !equal(*token, op)) error_at((*token)->str, "expect %s", op);
     *token = (*token)->next;
     return;
 }
@@ -117,7 +117,7 @@ Token *consume_ident(Token **token) {
 
 Token *expect_ident(Token **token) {
     if ((*token)->kind != TkIdent) {
-        error_parse(*token, "expect ident\n");
+        error_at((*token)->str, "expect ident");
         return NULL;
     }    
     Token *token_return = *token;
@@ -132,7 +132,7 @@ bool consume_keyword(Token **token, char *keyword) {
 }
 
 void expect_keyword(Token **token, char *keyword) {
-    if ((*token)->kind != TkKeyword || !equal(*token, keyword)) error_parse(*token, "expect keyword\n");
+    if ((*token)->kind != TkKeyword || !equal(*token, keyword)) error_at((*token)->str, "expect keyword %s", keyword);
     *token = (*token)->next;
     return;
 }
@@ -157,7 +157,7 @@ Obj *find_lvar(Token *token, bool redeclaration) {
     for (Obj *obj = locals->objs;obj; obj = obj->next) {
         if (len == obj->len && strncmp(name, obj->name, len) == 0) {
             if (redeclaration) {
-                error_parse(token, "redeclaration");
+                error_at(token->str, "redeclaration");
             }
             return obj;
         }
@@ -210,7 +210,7 @@ Obj *find_member(Struct *st, Token *token) {
             return obj;
         }
     }
-    error_parse(token, "this struct has no member name\n");
+    error_at(token->str, "this struct has no member of this name\n");
     return NULL;
 }
 
@@ -231,7 +231,7 @@ Obj *find_enum_const(Token *token) {
             }
         }
     }
-    error_parse(token, "undefinesd variable\n");
+    error_at(token->str, "undefinesd variable\n");
     return NULL;
 }
 
@@ -251,7 +251,7 @@ void add_gvar(Obj *obj) {
 
 Obj *new_obj(Token *token, Type *type) {
     if (type->kind == TyVoid) {
-        error_type("cannot define void object\n");
+        error_at(token->str, "cannot define void object");
     }
     Obj *obj = calloc(1, sizeof(Obj));
     obj->name = token->str;
@@ -518,7 +518,7 @@ Node *postfix(Token **token) {
             continue;
         }
         if (consume(token, "(")) {
-            error_parse(*token, "function pointer is not supported now\n");
+            error_at((*token)->str, "function pointer is not supported now\n");
             continue;
         }
 
@@ -614,7 +614,7 @@ Node *new_add(Node *lhs, Node *rhs) {
         rhs = new_node_binary(NdMul, rhs, new_node_num(size));
         return new_node_binary(NdAdd, lhs , rhs);
     } else {
-        error_type("type error : cannot add this two type\n");
+        error("type error : cannot add this two type\n");
         return NULL;
     }
 }
@@ -635,7 +635,7 @@ Node *new_sub(Node *lhs, Node *rhs) {
         Node *node = new_node_binary(NdSub, lhs, rhs);
         return new_node_binary(NdDiv, node, new_node_num(size));
     } else {
-        error_type("type error : cannot sub this two type\n");
+        error("type error : cannot sub this two type\n");
         return NULL;
     }
 }
@@ -1007,7 +1007,7 @@ Type *typespec(Token **token) {
         enum_spec(token);
         return new_type(TyInt);
     }
-    error_parse(*token, "this is not type");
+    error_at((*token)->str, "unknown type name");
     return NULL;
 }
 
@@ -1022,7 +1022,7 @@ Struct *struct_spec(Token **token) {
         }
         Struct *s = find_struct(token_ident);
         if (!s) {
-            error_parse(*token, "undefined type");
+            error_at((*token)->str, "unknown type name");
         } 
         return s;
     }
@@ -1034,11 +1034,11 @@ Struct *struct_spec(Token **token) {
         }
         Struct *s = find_struct(token_ident);
         if (!s) {
-            error_parse(*token, "undefined type");
+            error_at((*token)->str, "unknown type name");
         } 
         return s;
     }
-    error_parse(*token, "this is not sturct or union");
+    error_at((*token)->str, "this is not sturct or union type");
     return NULL;
 }
 
@@ -1077,7 +1077,7 @@ Enum *enum_spec(Token **token) {
     }
     Enum *enm = find_enum(token_ident);
     if (!enm) {
-        error_parse(*token, "undefined type");
+        error_at((*token)->str, "unknown type name");
     }
     return enm;
 }

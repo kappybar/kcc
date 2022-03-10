@@ -17,6 +17,12 @@ typedef struct Scope Scope;
 typedef struct Node Node;
 
 //
+// main.c
+//
+
+extern char *input_path;
+
+//
 // tokenize.c
 //
 
@@ -41,6 +47,7 @@ struct Token {
     int val;       
 };
 
+extern char *user_input;
 Token *tokenize_file(char *path);
 
 //
@@ -229,10 +236,8 @@ void codegen(Obj *func, char *path);
 
 int counter();
 int align_to(int x, int align);
-void error_tokenize(char *p);
-void error_parse(Token *token, const char *fmt, ...);
-void error_codegen();
-void error_type(char *fmt, ...);
+void error(char *fmt, ...);
+void error_at(char *loc, char *fmt, ...);
 
 //
 // debug.c

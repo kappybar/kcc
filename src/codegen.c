@@ -46,7 +46,7 @@ void codegen_gvar_init(Type *type, Node *init) {
     case TyAbsent:
     case TyFunc:
     case TyVoid :
-        error_codegen();
+        error("cannot initialize this type");
         break;
     case TyChar :
         println("  .byte %d", init->val);
@@ -74,7 +74,7 @@ void codegen_gvar_init(Type *type, Node *init) {
             name[init->lhs->obj->len] = '\0';
             println("  .quad %s", name);
         } else {
-            error_codegen();
+            error("cannot initialize this value");
         }
         break;
     }
@@ -92,12 +92,12 @@ void codegen_gvar_init(Type *type, Node *init) {
         } else if (init->kind == NdGvar) {
             codegen_gvar_init(type, init->obj->init);
         } else {
-            error_codegen();
+            error("cannot initialize this type");
         }
         break;
         }
     case TyStruct : {
-        error_type("THIS IS NOT IMPLEMENNTED");
+        error("THIS IS NOT IMPLEMENNTED");
     }
     }
 }
@@ -187,7 +187,7 @@ void gen_addr(Node *node) {
         stack_push("  push rax");
         break;
     default:
-        error_codegen(); 
+        error("not a lvalue"); 
     }
 } 
 
@@ -354,7 +354,7 @@ void codegen_expr(Node *node) {
     case NdBlock:
     case NdIf:
     case NdFor:
-        error_codegen();
+        error("expect expression, but statement");
     default:
         break;
     }
@@ -415,7 +415,7 @@ void codegen_expr(Node *node) {
         println("  mov rax, rdi");
         break;
     default:
-        error_codegen();
+        error("cannot codegen");
     }
 
     stack_push("  push rax");
