@@ -977,7 +977,7 @@ Node *expr(Token **token) {
 //        | "if" "(" expr ")" stmt ("else" stmt) ?
 //        | "while" "(" expr ")" stmt 
 //        | "do" stmt "while" "(" expr ")"
-//        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+//        | "for" "(" (expr | declaration)? ";" expr? ";" expr? ")" stmt
 //        | "switch" "(" expr ")" stmt
 //        | "case" const_expr ":" stmt
 //        | "default" ":" stmt
@@ -1025,10 +1025,17 @@ Node *stmt(Token **token) {
     }
     if (consume_keyword(token, "for")) {
         expect(token, "(");
+        // scope
+        Scope *new_locals = next_locals();
         Node *node = new_node(NdFor);
         if (!consume(token, ";")) {
-            node->init = expr(token);
-            expect(token, ";");
+            if (is_typename(*token)) {
+                node->init = declaration(token, false);
+                node->init->kind = NdStmtExpr;
+            } else {
+                node->init = expr(token);
+                expect(token, ";");
+            }
         }
         if (!consume(token, ";")) {
             node->cond = expr(token);
@@ -1039,6 +1046,8 @@ Node *stmt(Token **token) {
             expect(token, ")");
         }
         node->then = stmt(token);
+        // scope
+        prev_locals(new_locals);
         return node;
     }
     if (consume_keyword(token, "switch")) {

@@ -95,6 +95,8 @@ int main() {
     ASSERT(5, ({int i = 0; for (i = 0;i < 10; i++) { if (i == 5) break; } i;}));
     ASSERT(6, ({int i = 0,s = 0; for (i = 0;i < 10; i++) { if (i % 3 == 0) continue; s++; } s;}));
     ASSERT(6, ({int i = 0,s = 0; for (i = 0;i < 10; i++) { if (i % 3 == 0) {continue;} s++; } s;}));
+    ASSERT(45, ({int i = 0,s = 0; for (int i = 0;i < 10; i++) { s += i; } s;}));
+    ASSERT(0, ({int i = 0,s = 0; for (int i = 0;i < 10; i++) { s += i; } i;}));
     ASSERT(5, ({int i = 0; while (i < 10) { if (i == 5) break; i++;} i;}));
     ASSERT(5, ({int i = 0,s = 0; while (i++ < 10) { if (i % 2 == 0) continue; s++;} s;}));
     ASSERT(5, ({int i = 0,s = 0; while (i++ < 10) { if (i % 2 == 1) continue; s++;} s;}));
