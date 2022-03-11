@@ -40,6 +40,9 @@ int main() {
     ASSERT(5, ({int i = 0; switch (3) {case 0:i++;i++; default: i++; case 1:i++;i++; case 2: i++; i++; } i; }));
     ASSERT(7, ({int i = 0; switch (0) {case 0:i++;i++; default: i++; case 1:i++;i++; case 2: i++; i++; } i; }));
     ASSERT(2, ({int i = 0; switch (0) {case 0:{switch (1) {case 0:i++; case 1:i++;}} case 1:{switch (0) case 0:i++;}} i;}));
+    ASSERT(2, ({int i = 0; switch (0) {case 0:i++;{case 1:i++;}} i;}));
+    ASSERT(1, ({int i = 0; switch (1) {case 0:i++;{case 1:i++;}} i;}));
+    ASSERT(0, ({int i = 0; switch (2) {case 0:i++;{case 1:i++;}} i;}));
 
     return 0;
 }
