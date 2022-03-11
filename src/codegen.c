@@ -202,7 +202,42 @@ void assign_break_label(Node *node, int id) {
     default:
         return;
     }
+}
 
+void assign_continue_label(Node *node, int id) {
+    switch (node->kind) {
+    case NdContinue: {
+        char *s = calloc(20, sizeof(char));
+        sprintf(s, ".Lcontinue%d", id);
+        node->label = s;
+        return;
+    }
+    case NdBlock:
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            switch (nd->kind) {
+            case NdContinue:
+            case NdBlock:
+                assign_continue_label(nd, id);
+                break;
+            case NdIf:
+                assign_continue_label(nd->then, id);
+                if (nd->els) {
+                    assign_continue_label(nd->els, id);
+                }
+                break;
+            case NdSwitch:
+            case NdCase:
+            case NdDefault:
+                assign_continue_label(nd->then, id);
+                break;
+            default:
+                break;
+            }
+        }
+        return;
+    default:
+        return;
+    }
 }
 
 void codegen_gvar(Obj *obj) {
@@ -323,6 +358,7 @@ void codegen_stmt(Node *node) {
     case NdFor : {
         int cnt = counter();
         assign_break_label(node->then, cnt);
+        assign_continue_label(node->then, cnt);
         if (node->init) {
             codegen_expr(node->init);
             stack_pop("  pop rax # init%d", cnt);
@@ -335,6 +371,7 @@ void codegen_stmt(Node *node) {
             println("  je .Lend%d", cnt);
         }
         codegen_stmt(node->then);
+        println(".Lcontinue%d:", cnt);
         if (node->inc) {
             codegen_expr(node->inc);
             stack_pop("  pop rax # inc%d", cnt);
@@ -346,12 +383,14 @@ void codegen_stmt(Node *node) {
     case NdDoWhile : {
         int cnt = counter();
         assign_break_label(node->then, cnt);
-        println(".Lcond%d:", cnt);
+        assign_continue_label(node->then, cnt);
+        println(".Lbegin%d:", cnt);
         codegen_stmt(node->then);
+        println(".Lcontinue%d:", cnt);
         codegen_expr(node->cond);
         stack_pop("  pop rax # cond%d", cnt);
         println("  cmp rax, 0");
-        println("  jne .Lcond%d", cnt);
+        println("  jne .Lbegin%d", cnt);
         println(".Lend%d:", cnt);
         return;
     }
@@ -384,7 +423,14 @@ void codegen_stmt(Node *node) {
     }
     case NdBreak : {
         if (!node->label) {
-            error("break statement not within loop or switch");
+            error("break statement not within loop or switch\n");
+        }
+        println("  jmp %s", node->label);
+        return;
+    }
+    case NdContinue : {
+        if (!node->label) {
+            error("continue statement not within loop\n");
         }
         println("  jmp %s", node->label);
         return;
@@ -509,6 +555,7 @@ void codegen_expr(Node *node) {
     case NdCase:
     case NdDefault:
     case NdBreak:
+    case NdContinue:
         error("expect expression, but statement");
     default:
         break;

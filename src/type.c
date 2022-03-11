@@ -308,6 +308,7 @@ void add_type(Node *node) {
     case NdCase:
     case NdDefault:
     case NdBreak:
+    case NdContinue:
     case NdInit:
         node->type = new_type(TyVoid);
         break;

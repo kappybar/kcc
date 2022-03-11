@@ -49,6 +49,26 @@ int g(int x, int y) {
     return res;
 }
 
+int h(int n) {
+    int i = 0;
+    int s = 0;
+    for (i = 0;i < n; i++) {
+        switch (i % 3) {
+        case 0:
+            s += 1;
+            continue;
+        case 1:
+            s += 10;
+            continue;
+        case 2:
+            s += 50;
+            break;
+        }
+        s += 50;
+    }
+    return s;
+}
+
 int main() {
 
     ASSERT(7,  ({ int foo; int bar; foo = 3;bar = 4; foo + bar;}));
@@ -73,8 +93,14 @@ int main() {
     ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); s;}));
     ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); i;}));
     ASSERT(5, ({int i = 0; for (i = 0;i < 10; i++) { if (i == 5) break; } i;}));
+    ASSERT(6, ({int i = 0,s = 0; for (i = 0;i < 10; i++) { if (i % 3 == 0) continue; s++; } s;}));
+    ASSERT(6, ({int i = 0,s = 0; for (i = 0;i < 10; i++) { if (i % 3 == 0) {continue;} s++; } s;}));
     ASSERT(5, ({int i = 0; while (i < 10) { if (i == 5) break; i++;} i;}));
+    ASSERT(5, ({int i = 0,s = 0; while (i++ < 10) { if (i % 2 == 0) continue; s++;} s;}));
+    ASSERT(5, ({int i = 0,s = 0; while (i++ < 10) { if (i % 2 == 1) continue; s++;} s;}));
     ASSERT(5, ({int i = 0; do { if (i == 5) break; i++; } while (i < 10); i;}));
+    ASSERT(5, ({int i = 0,s = 0; do { if (i % 2 == 0) continue; s++; } while (i++ < 10); s;}));
+    ASSERT(6, ({int i = 0,s = 0; do { if (i % 2 == 1) continue; s++; } while (i++ < 10); s;}));
     ASSERT(3, ({int i = 0; switch (0) {case 0:i++; case 1:i++; case 2: i++;} i;}));
     ASSERT(2, ({int i = 0; switch (1) {case 0:i++; case 1:i++; case 2: i++;} i;}));
     ASSERT(1, ({int i = 0; switch (2) {case 0:i++; case 1:i++; case 2: i++;} i;}));
@@ -104,6 +130,8 @@ int main() {
     ASSERT(2, g(1, 1));
     ASSERT(3, g(1, 5));
     ASSERT(10, g(2, 5));
+    ASSERT(334, h(10));
+    ASSERT(122, h(5));
 
 
     return 0;

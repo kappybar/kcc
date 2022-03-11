@@ -190,6 +190,7 @@ typedef enum {
     NdCase,     // case
     NdDefault,  // default
     NdBreak,    // break
+    NdContinue, // continue
     NdBlock,    // { .. }
     NdDeref,    // *
     NdRef,      // &
@@ -233,7 +234,7 @@ struct Node {
     // NdMember
     Obj *member;
 
-    // NdCase, NdDefault
+    // NdCase, NdDefault, NdBreak, NdContinue
     char *label;
 };
 

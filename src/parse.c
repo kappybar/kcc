@@ -982,6 +982,7 @@ Node *expr(Token **token) {
 //        | "case" const_expr ":" stmt
 //        | "default" ":" stmt
 //        | "break" ";"
+//        | "continue" ";"
 //        | "{" compound_stmt
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
@@ -1065,6 +1066,11 @@ Node *stmt(Token **token) {
     if (consume_keyword(token, "break")) {
         expect(token, ";");
         Node *node = new_node(NdBreak);
+        return node;
+    }
+    if (consume_keyword(token, "continue")) {
+        expect(token, ";");
+        Node *node = new_node(NdContinue);
         return node;
     }
     if (consume(token, "{")) {
