@@ -1,5 +1,54 @@
 #include "test.h"
 
+int f(int x) {
+    int res = 0;
+    switch (x) {
+    case 0: 
+        res = 0;
+        break;
+    case 1:
+        res = 1;
+        break;
+    case 2:
+        res = 2;
+        break;
+    default:
+        res = 10;
+        break;
+    }
+    return res;
+}
+
+int g(int x, int y) {
+    int res = 0;
+    switch (x) {
+    case 0: 
+        switch (y) {
+        case 0:
+            res = 0;
+            break;
+        default:
+            res = 1;
+            break;
+        }
+        break;
+    case 1:
+        switch (y) {
+        case 1:
+            res = 2;
+            break;
+        default:
+            res = 3;
+            break;
+        }
+        break;
+    default:
+        res = 10;
+        break;
+    }
+    return res;
+}
+
 int main() {
 
     ASSERT(7,  ({ int foo; int bar; foo = 3;bar = 4; foo + bar;}));
@@ -23,6 +72,9 @@ int main() {
     ASSERT(1, ({int a[3] = {1,2,3}; a[1,2] = 1; a[2];}));
     ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); s;}));
     ASSERT(11, ({int i = 0;int s = 0; do {s++;} while (i++ < 10); i;}));
+    ASSERT(5, ({int i = 0; for (i = 0;i < 10; i++) { if (i == 5) break; } i;}));
+    ASSERT(5, ({int i = 0; while (i < 10) { if (i == 5) break; i++;} i;}));
+    ASSERT(5, ({int i = 0; do { if (i == 5) break; i++; } while (i < 10); i;}));
     ASSERT(3, ({int i = 0; switch (0) {case 0:i++; case 1:i++; case 2: i++;} i;}));
     ASSERT(2, ({int i = 0; switch (1) {case 0:i++; case 1:i++; case 2: i++;} i;}));
     ASSERT(1, ({int i = 0; switch (2) {case 0:i++; case 1:i++; case 2: i++;} i;}));
@@ -43,6 +95,16 @@ int main() {
     ASSERT(2, ({int i = 0; switch (0) {case 0:i++;{case 1:i++;}} i;}));
     ASSERT(1, ({int i = 0; switch (1) {case 0:i++;{case 1:i++;}} i;}));
     ASSERT(0, ({int i = 0; switch (2) {case 0:i++;{case 1:i++;}} i;}));
+    ASSERT(0, f(0));
+    ASSERT(1, f(1));
+    ASSERT(2, f(2));
+    ASSERT(10, f(90));
+    ASSERT(0, g(0, 0));
+    ASSERT(1, g(0, 3));
+    ASSERT(2, g(1, 1));
+    ASSERT(3, g(1, 5));
+    ASSERT(10, g(2, 5));
+
 
     return 0;
 }

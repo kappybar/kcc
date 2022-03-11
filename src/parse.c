@@ -981,6 +981,7 @@ Node *expr(Token **token) {
 //        | "switch" "(" expr ")" stmt
 //        | "case" const_expr ":" stmt
 //        | "default" ":" stmt
+//        | "break" ";"
 //        | "{" compound_stmt
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
@@ -1059,6 +1060,11 @@ Node *stmt(Token **token) {
         expect(token, ":");
         Node *node = new_node(NdDefault);
         node->then = stmt(token);
+        return node;
+    }
+    if (consume_keyword(token, "break")) {
+        expect(token, ";");
+        Node *node = new_node(NdBreak);
         return node;
     }
     if (consume(token, "{")) {

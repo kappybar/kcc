@@ -126,14 +126,6 @@ void codegen_case(Node *node) {
         for (Node *nd = node->body;nd;nd = nd->next) {
             switch (nd->kind) {
             case NdCase:
-                assign_label(nd);
-                codegen_expr(nd->cond);
-                stack_pop("  pop rdi");
-                stack_pop("  pop rax");
-                println("  cmp rax, rdi");
-                stack_push("  push rax");
-                println("  je %s", nd->label);
-                break;
             case NdBlock:
                 codegen_case(nd);
                 break;
@@ -158,9 +150,6 @@ void codegen_default(Node *node) {
         for (Node *nd = node->body;nd;nd = nd->next) {
             switch (nd->kind) {
             case NdDefault:
-                assign_label(nd);
-                println("  jmp %s", nd->label);
-                break;
             case NdBlock:
                 codegen_default(nd);
                 break;
@@ -178,6 +167,42 @@ void codegen_switch(Node *node) {
     codegen_case(node);
     codegen_default(node);
     return;
+}
+
+void assign_break_label(Node *node, int id) {
+    switch (node->kind) {
+    case NdBreak: {
+        char *s = calloc(15, sizeof(char));
+        sprintf(s, ".Lend%d", id);
+        node->label = s;
+        return;
+    }
+    case NdBlock:
+        for (Node *nd = node->body;nd;nd = nd->next) {
+            switch (nd->kind) {
+            case NdBreak:
+            case NdBlock:
+                assign_break_label(nd, id);
+                break;
+            case NdIf:
+                assign_break_label(nd->then, id);
+                if (nd->els) {
+                    assign_break_label(nd->els, id);
+                }
+                break;
+            case NdCase:
+            case NdDefault:
+                assign_break_label(nd->then, id);
+                break;
+            default:
+                break;
+            }
+        }
+        return;
+    default:
+        return;
+    }
+
 }
 
 void codegen_gvar(Obj *obj) {
@@ -297,6 +322,7 @@ void codegen_stmt(Node *node) {
     }
     case NdFor : {
         int cnt = counter();
+        assign_break_label(node->then, cnt);
         if (node->init) {
             codegen_expr(node->init);
             stack_pop("  pop rax # init%d", cnt);
@@ -319,6 +345,7 @@ void codegen_stmt(Node *node) {
     }
     case NdDoWhile : {
         int cnt = counter();
+        assign_break_label(node->then, cnt);
         println(".Lcond%d:", cnt);
         codegen_stmt(node->then);
         codegen_expr(node->cond);
@@ -330,6 +357,7 @@ void codegen_stmt(Node *node) {
     }
     case NdSwitch : {
         int cnt = counter();
+        assign_break_label(node->then, cnt);
         codegen_expr(node->cond);
         codegen_switch(node->then);
         println("  jmp .Lend%d", cnt);  
@@ -352,6 +380,13 @@ void codegen_stmt(Node *node) {
         }
         println("%s:", node->label);
         codegen_stmt(node->then);
+        return;
+    }
+    case NdBreak : {
+        if (!node->label) {
+            error("break statement not within loop or switch");
+        }
+        println("  jmp %s", node->label);
         return;
     }
     case NdBlock :
@@ -473,6 +508,7 @@ void codegen_expr(Node *node) {
     case NdSwitch:
     case NdCase:
     case NdDefault:
+    case NdBreak:
         error("expect expression, but statement");
     default:
         break;

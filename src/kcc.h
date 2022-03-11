@@ -189,6 +189,7 @@ typedef enum {
     NdSwitch,   // switch
     NdCase,     // case
     NdDefault,  // default
+    NdBreak,    // break
     NdBlock,    // { .. }
     NdDeref,    // *
     NdRef,      // &
