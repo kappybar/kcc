@@ -610,41 +610,6 @@ Node *const_eval(Node *node) {
     return NULL;
 }
 
-Node *search_case_node(Node *node) {
-    Node head;
-    head.next = NULL;
-    Node *cur = &head;
-
-    switch (node->kind) {
-    case NdCase:
-        cur->next = node;
-        cur = cur->next;
-        break;
-    case NdBlock:
-        for (Node *nd = node->body;nd;nd = nd->next) {
-            if (nd->kind == NdCase) {
-                cur->next = nd;
-                cur = cur->next;
-            }
-        }
-        break;
-    default:
-        break;
-    }
-
-    return head.next;
-}
-
-void assign_case_label(Node *node) {
-    for (Node *nd = node->cases;nd;nd = nd->next) {
-        char *s = calloc(10, sizeof(char));
-        int cnt = counter();
-        sprintf(s, ".L%d", cnt);
-        nd->label = s;
-    }
-    return;
-}
-
 // argument = assign ("," assign) *
 Node *argument(Token **token) {
     Node head;
@@ -1015,6 +980,7 @@ Node *expr(Token **token) {
 //        | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 //        | "switch" "(" expr ")" stmt
 //        | "case" const_expr ":" stmt
+//        | "default" ":" stmt
 //        | "{" compound_stmt
 Node *stmt(Token **token) {
     if (consume_keyword(token, "return")) {
@@ -1079,8 +1045,6 @@ Node *stmt(Token **token) {
         node->cond = expr(token);
         expect(token, ")");
         node->then = stmt(token);
-        node->cases = search_case_node(node->then);
-        assign_case_label(node);
         return node;
     }
     if (consume_keyword(token, "case")) {
@@ -1088,6 +1052,12 @@ Node *stmt(Token **token) {
         node->cond = const_expr(token);
         node->cond = const_eval(node->cond);
         expect(token, ":");
+        node->then = stmt(token);
+        return node;
+    }
+    if (consume_keyword(token, "default")) {
+        expect(token, ":");
+        Node *node = new_node(NdDefault);
         node->then = stmt(token);
         return node;
     }

@@ -188,6 +188,7 @@ typedef enum {
     NdDoWhile,  // do while 
     NdSwitch,   // switch
     NdCase,     // case
+    NdDefault,  // default
     NdBlock,    // { .. }
     NdDeref,    // *
     NdRef,      // &
@@ -231,10 +232,7 @@ struct Node {
     // NdMember
     Obj *member;
 
-    // NdSwith
-    Node *cases;
-
-    // NdCase
+    // NdCase, NdDefault
     char *label;
 };
 

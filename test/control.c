@@ -32,6 +32,14 @@ int main() {
     ASSERT(0, ({int i = 0; switch (1) i = 3; i; }));
     ASSERT(3, ({int i = 0;int k = 0; switch (k) {case 0:i++; case 1:i++; case 2: i++;} i; }));
     ASSERT(2, ({int i = 0;int k = 1; switch (k) {case 0:i++; case 1:i++; case 2: i++;} i; }));
+    ASSERT(6, ({int i = 0; switch (0) {case 0:i++;i++; case 1:i++;i++; case 2: i++; i++;} i; }));
+    ASSERT(4, ({int i = 0; switch (1) {case 0:i++;i++; case 1:i++;i++; case 2: i++; i++;} i; }));
+    ASSERT(1, ({int i = 0; switch (3) {case 0:i++;i++; case 1:i++;i++; case 2: i++; i++; default: i++;} i; }));
+    ASSERT(3, ({int i = 0; switch (2) {case 0:i++;i++; case 1:i++;i++; case 2: i++; i++; default: i++;} i; }));
+    ASSERT(2, ({int i = 0; switch (2) {case 0:i++;i++; default: i++; case 1:i++;i++; case 2: i++; i++; } i; }));
+    ASSERT(5, ({int i = 0; switch (3) {case 0:i++;i++; default: i++; case 1:i++;i++; case 2: i++; i++; } i; }));
+    ASSERT(7, ({int i = 0; switch (0) {case 0:i++;i++; default: i++; case 1:i++;i++; case 2: i++; i++; } i; }));
+    ASSERT(2, ({int i = 0; switch (0) {case 0:{switch (1) {case 0:i++; case 1:i++;}} case 1:{switch (0) case 0:i++;}} i;}));
 
     return 0;
 }

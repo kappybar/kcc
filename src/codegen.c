@@ -102,6 +102,63 @@ void codegen_gvar_init(Type *type, Node *init) {
     }
 }
 
+void assign_label(Node *node) {
+    char *s = calloc(10, sizeof(char));
+    int cnt = counter();
+    sprintf(s, ".L%d", cnt);
+    node->label = s;
+    return;
+}
+
+void codegen_switch(Node *node) {
+    // codegen case label
+    switch (node->then->kind) {
+    case NdCase:
+        assign_label(node->then);
+        codegen_expr(node->then->cond);
+        stack_pop("  pop rdi");
+        stack_pop("  pop rax");
+        println("  cmp rax, rdi");
+        stack_push("  push rax");
+        println("  je %s", node->then->label);
+        break;
+    case NdBlock:
+        for (Node *nd = node->then->body;nd;nd = nd->next) {
+            if (nd->kind == NdCase) {
+                assign_label(nd);
+                codegen_expr(nd->cond);
+                stack_pop("  pop rdi");
+                stack_pop("  pop rax");
+                println("  cmp rax, rdi");
+                stack_push("  push rax");
+                println("  je %s", nd->label);
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    // codegen default jmp
+    switch (node->then->kind) {
+    case NdDefault:
+        assign_label(node->then);
+        println("  jmp %s", node->then->label);  
+        break;
+    case NdBlock:
+        for (Node *nd = node->then->body;nd;nd = nd->next) {
+            if (nd->kind == NdDefault) {
+                assign_label(nd);
+                println("  jmp %s", nd->label);
+                break;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    return;
+}
+
 void codegen_gvar(Obj *obj) {
     char s[100];
     strncpy(s, obj->name, obj->len);
@@ -253,14 +310,7 @@ void codegen_stmt(Node *node) {
     case NdSwitch : {
         int cnt = counter();
         codegen_expr(node->cond);
-        for (Node *nd = node->cases;nd;nd = nd->next) {
-            codegen_expr(nd->cond);
-            stack_pop("  pop rdi");
-            stack_pop("  pop rax");
-            println("  cmp rax, rdi");
-            stack_push("  push rax");
-            println("  je %s", nd->label);
-        }  
+        codegen_switch(node);
         println("  jmp .Lend%d", cnt);  
         codegen_stmt(node->then);
         println(".Lend%d:", cnt);
@@ -270,6 +320,14 @@ void codegen_stmt(Node *node) {
     case NdCase : {
         if (!node->label) {
             error("case label not within switch statement\n");
+        }
+        println("%s:", node->label);
+        codegen_stmt(node->then);
+        return;
+    }
+    case NdDefault : {
+        if (!node->label) {
+            error("default label not within switch statement\n");
         }
         println("%s:", node->label);
         codegen_stmt(node->then);
@@ -393,6 +451,7 @@ void codegen_expr(Node *node) {
     case NdDoWhile:
     case NdSwitch:
     case NdCase:
+    case NdDefault:
         error("expect expression, but statement");
     default:
         break;

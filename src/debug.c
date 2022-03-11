@@ -321,6 +321,14 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "Then\n");
         display_node(node->then, indent + 1);
         break;
+    case NdDefault:
+        fprintf(stderr, "Default");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_space(indent);
+        fprintf(stderr, "Then\n");
+        display_node(node->then, indent + 1);
+        break;
     case NdBlock:
         fprintf(stderr, "Block");
         display_type(node->type);
