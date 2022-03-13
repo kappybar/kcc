@@ -22,6 +22,7 @@ int main() {
     ASSERT(10, ({ int a[2][2]; a[1][1] = 10; a[1][1]; }));
     ASSERT(1 , ({ int a[1][1]; **a = 1; **a; }));
     ASSERT(3 , ({int a = 3, *b = &a; *b; }));
+    ASSERT(10 , ({int a[5] = {0,1,2,3,4}; int s = 0; for(int *b=a,i=0;i < 5;i++,b++) s += *b; s;}));
 
     return 0;
 }

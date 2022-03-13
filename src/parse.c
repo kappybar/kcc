@@ -255,7 +255,7 @@ Obj *find_enum_const(Token *token) {
 Type *find_typdef(Token *token) {
     for (Typdef *typdef = defined_typdefs;typdef;typdef = typdef->next) {
         if (typdef->name_len == token->len && strncmp(typdef->name, token->str, token->len) == 0) {
-            return typdef->type;
+            return copy_type(typdef->type);
         }
     }
     return NULL;

@@ -95,6 +95,7 @@ Type *new_type_ptr(Type *ty);
 Type *new_type_array(Type *ty, size_t size);
 Type *new_type_struct(Struct *s);
 Type *new_type_fun(Type *return_ty, Type *params_ty);
+Type *copy_type(Type *ty);
 Node *zeros_like(Type *type);
 Type *fill_absent_type(Type *type_absent, Type *type_fill);
 int alignment(Type *ty);

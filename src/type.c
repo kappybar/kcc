@@ -39,9 +39,16 @@ Type *new_type_fun(Type *return_ty, Type *params_ty) {
 Type *copy_type(Type *ty) {
     Type *type = calloc(1, sizeof(Type));
     type->kind = ty->kind;
+    type->next = ty->next ? copy_type(ty->next) : NULL;
+
     type->ptr_to = ty->ptr_to ? copy_type(ty->ptr_to) : NULL;
+    type->return_ty = ty->return_ty ? copy_type(ty->return_ty) : NULL;
+    type->params = ty->params ? copy_type(ty->params) : NULL;
+
     type->array_size = ty->array_size;
     type->type_struct = ty->type_struct;
+
+    type->is_typdef = ty->is_typdef;
     return type;
 }
 

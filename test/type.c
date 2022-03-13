@@ -45,6 +45,16 @@ void (*signal(int x, void (*y)(int z)))(int w);
 
 typedef int I;
 typedef short S;
+typedef int IA[10];
+typedef int IAA[10][10];
+
+void set(IA a, int i) {
+    a[i] = 1;
+}
+
+void set2(IAA a, int i, int j) {
+    a[i][j] = 1;
+}
 
 int main() {
 
@@ -86,15 +96,19 @@ int main() {
     ASSERT(4 , sizeof(int));
     ASSERT(8 , sizeof(long));
     ASSERT(3, ({int a = 1,b = 3; swap(&a, &b); a;}));
+
     ASSERT(0, ({ int (*x)[1]; 0; }));
     ASSERT(0, ({ int (*x)(); 0; }));
     ASSERT(0, ({ int (**x)(); 0; }));
     ASSERT(0, ({ int (*x[1])(); 0; }));
+
     ASSERT(1, ({I x = 1; x;}));
     ASSERT(1, ({S x = 1; x;}));
     ASSERT(4, sizeof(I));
     ASSERT(2, sizeof(S));
     ASSERT(1, ({int I = 1;int y = 1; I * y;}));
+    ASSERT(1, ({IA a; set(a,3); a[3];}));
+    ASSERT(1, ({IAA a; set2(a,3,3); a[3][3];}));
     
     return 0;
 }
