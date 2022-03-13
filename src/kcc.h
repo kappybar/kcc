@@ -182,6 +182,7 @@ typedef enum {
     NdXor,      // ^
     NdOr,       // |
     NdLAnd,     // &&
+    NdLOr,      // ||
     NdPostInc,  // post ++
     NdPostDec,  // post --
     NdAssign,   // =

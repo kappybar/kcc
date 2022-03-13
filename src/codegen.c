@@ -635,6 +635,19 @@ void codegen_expr(Node *node) {
         println(".L.true%d:", cnt);
         break;
     }
+    case NdLOr: {
+        int cnt = counter();
+        println("  cmp rax, 0");
+        println("  jne .L.true%d", cnt);
+        println("  cmp rdi, 0");
+        println("  jne .L.true%d", cnt);
+        println("  mov rax, 0");
+        println("  jmp .L.false%d", cnt);
+        println(".L.true%d:", cnt);
+        println("  mov rax, 1");
+        println(".L.false%d:", cnt);
+        break;
+    }
     case NdComma:
         println("  mov rax, rdi");
         break;
