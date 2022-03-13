@@ -41,5 +41,11 @@ int main() {
     ASSERT(2, 2 | 2);
     ASSERT(7, 5 | 3);
     ASSERT(7, 2+3 | 1+2);
+    ASSERT(0, 0 && 0);
+    ASSERT(0, 1 && 0);
+    ASSERT(0, 0 && 1);
+    ASSERT(1, 1 && 1);
+    ASSERT(0, 3 && 0);
+    ASSERT(1, 1 && 5);
     return 0;
 }

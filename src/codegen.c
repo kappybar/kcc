@@ -622,6 +622,19 @@ void codegen_expr(Node *node) {
     case NdOr:
         println("  or rax, rdi");
         break;
+    case NdLAnd: {
+        int cnt = counter();
+        println("  cmp rax, 0");
+        println("  je .L.false%d", cnt);
+        println("  cmp rdi, 0");
+        println("  je .L.false%d", cnt);
+        println("  mov rax, 1");
+        println("  jmp .L.true%d", cnt);
+        println(".L.false%d:", cnt);
+        println("  mov rax, 0");
+        println(".L.true%d:", cnt);
+        break;
+    }
     case NdComma:
         println("  mov rax, rdi");
         break;
