@@ -33,5 +33,9 @@ int main() {
     ASSERT(2, 2 & 2);
     ASSERT(1, 5 & 3);
     ASSERT(1, 2+3 & 1+2);
+    ASSERT(3, 1 ^ 2);
+    ASSERT(0, 2 ^ 2);
+    ASSERT(6, 5 ^ 3);
+    ASSERT(6, 2+3 ^ 1+2);
     return 0;
 }

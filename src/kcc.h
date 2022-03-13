@@ -179,6 +179,7 @@ typedef enum {
     NdShl,      // <<
     NdSar,      // >> shift arithmetic right
     NdAnd,      // &
+    NdXor,      // ^
     NdPostInc,  // post ++
     NdPostDec,  // post --
     NdAssign,   // =

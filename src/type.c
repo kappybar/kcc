@@ -271,6 +271,7 @@ void add_type(Node *node) {
     case NdShl:
     case NdSar:
     case NdAnd:
+    case NdXor:
         if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
             error("type error : cannot operate this two type\n");
         }

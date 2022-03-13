@@ -934,7 +934,22 @@ Node *and_expr(Token **token) {
     return node;
 }
 
-// assign = and_expr ("="  assign | 
+// xor_expr = and_expr ("^" and_expr)*
+Node *xor_expr(Token **token) {
+    Node *node = and_expr(token);
+
+    while (1) {
+        if (consume(token, "^")) {
+            node = new_node_binary(NdXor, node, and_expr(token));
+            continue;
+        }
+        break;
+    }
+
+    return node;
+}
+
+// assign = xor_expr ("="  assign | 
 //                    "+=" assign | 
 //                    "-=" assign | 
 //                    "*=" assign | 
@@ -943,7 +958,7 @@ Node *and_expr(Token **token) {
 //                    "<<=" assign | 
 //                    ">>=" assign)?
 Node *assign(Token **token) {
-    Node *node = and_expr(token);
+    Node *node = xor_expr(token);
     
     if (consume(token, "=")) {
         node = new_node_binary(NdAssign, node, assign(token));
