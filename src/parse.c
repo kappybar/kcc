@@ -604,10 +604,79 @@ Node *const_eval(Node *node) {
         }
         break;
     }
-    case NdComma: {
+    case NdAnd : {
         Node *lhs = const_eval(node->lhs);
         Node *rhs = const_eval(node->rhs);
-        return rhs;
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val & rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdXor : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val ^ rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdOr : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val | rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdLAnd : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val && rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdLOr : {
+        Node *lhs = const_eval(node->lhs);
+        Node *rhs = const_eval(node->rhs);
+        add_type(lhs);
+        add_type(rhs);
+        if (is_integer(lhs->type) && is_integer(rhs->type)) {
+            return new_node_num(lhs->val || rhs->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
+    }
+    case NdCond : {
+        Node *cond = const_eval(node->cond);
+        Node *then = const_eval(node->then);
+        Node *els = const_eval(node->els);
+        add_type(cond);
+        add_type(then);
+        add_type(els);
+        if (is_integer(cond->type) && is_integer(then->type) && is_integer(els->type)) {
+            return new_node_num(cond->val ? then->val : els->val);
+        } else {
+            error("not a compile time constant");
+        }
+        break;
     }
     default: {
         error("not a compile time constant");
@@ -1058,9 +1127,9 @@ Node *assign(Token **token) {
     return node;
 }
 
-// const_expr = equality
+// const_expr = conditional
 Node *const_expr(Token **token) {
-    return equality(token);
+    return conditional(token);
 }
 
 // expr = assign (, assign)*

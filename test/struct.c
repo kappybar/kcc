@@ -59,8 +59,16 @@ enum e4 {
     E16 = 1 <= 1,
     E17 = 1 << 3,
     E18 = 10 >> 1,
-    E19 = (1,2,3,4),
-    E20 = (1+2*3)+3-(1-3),
+    E19 = 10 & 7,
+    E20 = 10 ^ 7,
+    E21 = 10 | 7,
+    E22 = 1 && 1,
+    E23 = 0 && 1,
+    E24 = 0 || 0,
+    E25 = 1 || 0,
+    E26 = 1 ? 2 : 3,
+    E27 = 0 ? 2 : 3,
+    E28 = (1+2*3)+3-(1-3),
 };
 
 struct Node {
@@ -119,8 +127,16 @@ int main() {
     ASSERT(1, E16);
     ASSERT(8, E17);
     ASSERT(5, E18);
-    ASSERT(4, E19);
-    ASSERT(12, E20);
+    ASSERT(2, E19);
+    ASSERT(13, E20);
+    ASSERT(15, E21);
+    ASSERT(1, E22);
+    ASSERT(0, E23);
+    ASSERT(0, E24);
+    ASSERT(1, E25);
+    ASSERT(2, E26);
+    ASSERT(3, E27);
+    ASSERT(12, E28);
 
 
 
