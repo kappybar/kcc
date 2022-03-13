@@ -270,8 +270,9 @@ void add_type(Node *node) {
     case NdMod:
     case NdShl:
     case NdSar:
+    case NdAnd:
         if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
-            error("type error : cannot mul this two type\n");
+            error("type error : cannot operate this two type\n");
         }
         node->type = new_type(TyInt);
         break;

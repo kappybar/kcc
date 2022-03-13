@@ -29,5 +29,9 @@ int main() {
     ASSERT(-15, -120 >> 3);
     ASSERT(64, 1 << 3 + 3);
     ASSERT(1, 1 << 2 < 1 << 3);
+    ASSERT(0, 1 & 2);
+    ASSERT(2, 2 & 2);
+    ASSERT(1, 5 & 3);
+    ASSERT(1, 2+3 & 1+2);
     return 0;
 }

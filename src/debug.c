@@ -227,6 +227,12 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "\n");
         display_child(node, indent);
         break;
+    case NdAnd : 
+        fprintf(stderr, "Bit And");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_child(node, indent);
+        break;
     case NdPostInc:
         fprintf(stderr, "Post Inc");
         display_type(node->type);
