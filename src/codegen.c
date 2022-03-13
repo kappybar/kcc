@@ -619,6 +619,9 @@ void codegen_expr(Node *node) {
     case NdXor:
         println("  xor rax, rdi");
         break;
+    case NdOr:
+        println("  or rax, rdi");
+        break;
     case NdComma:
         println("  mov rax, rdi");
         break;

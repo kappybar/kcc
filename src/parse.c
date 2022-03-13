@@ -57,6 +57,8 @@ Node *shift(Token **token);
 Node *relational (Token **token);
 Node *equality(Token **token);
 Node *and_expr(Token **token);
+Node *xor_expr(Token **token);
+Node *or_expr(Token **token);
 Node *assign(Token **token);
 Node *const_expr(Token **token);
 Node *expr(Token **token);
@@ -949,7 +951,23 @@ Node *xor_expr(Token **token) {
     return node;
 }
 
-// assign = xor_expr ("="  assign | 
+
+// or_expr = xor_expr ("|" xor_expr)*
+Node *or_expr(Token **token) {
+    Node *node = xor_expr(token);
+
+    while (1) {
+        if (consume(token, "|")) {
+            node = new_node_binary(NdOr, node, xor_expr(token));
+            continue;
+        }
+        break;
+    }
+
+    return node;
+}
+
+// assign = or_expr  ("="  assign | 
 //                    "+=" assign | 
 //                    "-=" assign | 
 //                    "*=" assign | 
@@ -958,7 +976,7 @@ Node *xor_expr(Token **token) {
 //                    "<<=" assign | 
 //                    ">>=" assign)?
 Node *assign(Token **token) {
-    Node *node = xor_expr(token);
+    Node *node = or_expr(token);
     
     if (consume(token, "=")) {
         node = new_node_binary(NdAssign, node, assign(token));

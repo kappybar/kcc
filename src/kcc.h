@@ -180,6 +180,7 @@ typedef enum {
     NdSar,      // >> shift arithmetic right
     NdAnd,      // &
     NdXor,      // ^
+    NdOr,       // |
     NdPostInc,  // post ++
     NdPostDec,  // post --
     NdAssign,   // =
