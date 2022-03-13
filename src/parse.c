@@ -61,6 +61,7 @@ Node *xor_expr(Token **token);
 Node *or_expr(Token **token);
 Node *land_expr(Token **token);
 Node *lor_expr(Token **token);
+Node *conditional(Token **token);
 Node *assign(Token **token);
 Node *const_expr(Token **token);
 Node *expr(Token **token);
@@ -1000,16 +1001,33 @@ Node *lor_expr(Token **token) {
     return node;
 }
 
-// assign = lor_expr   ("="   assign | 
-//                      "+="  assign | 
-//                      "-="  assign | 
-//                      "*="  assign | 
-//                      "/="  assign | 
-//                      "%="  assign | 
-//                      "<<=" assign | 
-//                      ">>=" assign)?
-Node *assign(Token **token) {
+// conditional = lor_expr 
+//               lor_expr "?" expr ":" conditional
+Node *conditional(Token **token) {
     Node *node = lor_expr(token);
+
+    if (consume(token, "?")) {
+        Node *cond = node;
+        node = new_node(NdCond);
+        node->cond = cond;
+        node->then = expr(token);
+        expect(token, ":");
+        node->els = conditional(token);
+    }
+
+    return node;
+}
+
+// assign = conditional ("="   assign | 
+//                       "+="  assign | 
+//                       "-="  assign | 
+//                       "*="  assign | 
+//                       "/="  assign | 
+//                       "%="  assign | 
+//                       "<<=" assign | 
+//                       ">>=" assign)?
+Node *assign(Token **token) {
+    Node *node = conditional(token);
     
     if (consume(token, "=")) {
         node = new_node_binary(NdAssign, node, assign(token));

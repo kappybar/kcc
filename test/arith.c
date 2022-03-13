@@ -53,5 +53,9 @@ int main() {
     ASSERT(1, 1 || 1);
     ASSERT(1, 3 || 0);
     ASSERT(1, 1 || 5);
+    ASSERT(5, 1 ? 5 : 0);
+    ASSERT(2, 0 ? 5 : 2);
+    ASSERT(2, 0 ? 5 : 1 ? 2 : 3);
+    ASSERT(5, 1 ? 5 : 1 ? 2 : 3);
     return 0;
 }

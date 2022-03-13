@@ -183,6 +183,7 @@ typedef enum {
     NdOr,       // |
     NdLAnd,     // &&
     NdLOr,      // ||
+    NdCond,     // ? : 
     NdPostInc,  // post ++
     NdPostDec,  // post --
     NdAssign,   // =
@@ -214,7 +215,7 @@ struct Node {
     Node *lhs; // left hand side
     Node *rhs; // right hand side
     
-    // NdIf, NdFor, NdDoWhile, NdSwitch
+    // NdIf, NdFor, NdDoWhile, NdSwitch, NdCond
     Node *cond;
     Node *then;
     Node *els;

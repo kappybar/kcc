@@ -257,6 +257,20 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "\n");
         display_child(node, indent);
         break;
+    case NdCond : 
+        fprintf(stderr, "Conditional");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_space(indent);
+        fprintf(stderr, "Cond\n");
+        display_node(node->cond, indent + 1);
+        display_space(indent);
+        fprintf(stderr, "Then\n");
+        display_node(node->then, indent + 1);
+        display_space(indent);
+        fprintf(stderr, "Else\n");
+        display_node(node->els, indent + 1);
+        break;
     case NdPostInc:
         fprintf(stderr, "Post Inc");
         display_type(node->type);

@@ -546,6 +546,22 @@ void codegen_expr(Node *node) {
         }
         stack_push("  push rax # StmtExpr");
         return;
+    case NdCond : {
+        int cnt = counter();
+        codegen_expr(node->cond);
+        stack_pop("  pop rax");
+        println("  cmp rax, 0");
+        println("  je .L.else%d", cnt);
+        codegen_expr(node->then);
+        stack_pop("  pop rax");
+        println("  jmp .L.end%d", cnt);
+        println(".L.else%d:", cnt);
+        codegen_expr(node->els);
+        stack_pop("  pop rax");
+        println(".L.end%d:", cnt);
+        stack_push("  push rax");
+        return;
+        }
     case NdReturn:
     case NdBlock:
     case NdIf:

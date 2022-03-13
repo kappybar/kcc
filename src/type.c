@@ -280,6 +280,12 @@ void add_type(Node *node) {
         }
         node->type = new_type(TyInt);
         break;
+    case NdCond:
+        if (!same_type(node->then->type, node->els->type)) {
+            error("type error : type mismatch in conditional expr\n");
+        }
+        node->type = node->then->type;
+        break;
     case NdEq:
     case NdNeq:
     case NdLt:
