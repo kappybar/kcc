@@ -560,6 +560,42 @@ void codegen_expr(Node *node) {
         }
         stack_push("  push rax # StmtExpr");
         return;
+    case NdLAnd: {
+        int cnt = counter();
+        codegen_expr(node->lhs);
+        stack_pop("  pop rax # lhs"); 
+        println("  cmp rax, 0");
+        println("  je .L.false%d", cnt);
+        codegen_expr(node->rhs);
+        stack_pop("  pop rdi # rhs"); 
+        println("  cmp rdi, 0");
+        println("  je .L.false%d", cnt);
+        println("  mov rax, 1");
+        println("  jmp .L.true%d", cnt);
+        println(".L.false%d:", cnt);
+        println("  mov rax, 0");
+        println(".L.true%d:", cnt);
+        stack_push("  push rax");
+        return;
+    }
+    case NdLOr: {
+        int cnt = counter();
+        codegen_expr(node->lhs);
+        stack_pop("  pop rax # lhs"); 
+        println("  cmp rax, 0");
+        println("  jne .L.true%d", cnt);
+        codegen_expr(node->rhs);
+        stack_pop("  pop rdi # rhs"); 
+        println("  cmp rdi, 0");
+        println("  jne .L.true%d", cnt);
+        println("  mov rax, 0");
+        println("  jmp .L.false%d", cnt);
+        println(".L.true%d:", cnt);
+        println("  mov rax, 1");
+        println(".L.false%d:", cnt);
+        stack_push("  push rax");
+        return;
+    }
     case NdCond : {
         int cnt = counter();
         codegen_expr(node->cond);
@@ -652,32 +688,6 @@ void codegen_expr(Node *node) {
     case NdOr:
         println("  or rax, rdi");
         break;
-    case NdLAnd: {
-        int cnt = counter();
-        println("  cmp rax, 0");
-        println("  je .L.false%d", cnt);
-        println("  cmp rdi, 0");
-        println("  je .L.false%d", cnt);
-        println("  mov rax, 1");
-        println("  jmp .L.true%d", cnt);
-        println(".L.false%d:", cnt);
-        println("  mov rax, 0");
-        println(".L.true%d:", cnt);
-        break;
-    }
-    case NdLOr: {
-        int cnt = counter();
-        println("  cmp rax, 0");
-        println("  jne .L.true%d", cnt);
-        println("  cmp rdi, 0");
-        println("  jne .L.true%d", cnt);
-        println("  mov rax, 0");
-        println("  jmp .L.false%d", cnt);
-        println(".L.true%d:", cnt);
-        println("  mov rax, 1");
-        println(".L.false%d:", cnt);
-        break;
-    }
     case NdComma:
         println("  mov rax, rdi");
         break;

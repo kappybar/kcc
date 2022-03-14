@@ -73,6 +73,8 @@ int main() {
     ASSERT(0, ({int a[3]={0,1,2};int *b = a; b++[0];}));
     ASSERT(0, ({int *d;int x;d = &x;*(d++) = 0; x;}));
     ASSERT(0, ({int *d;int x;d = &x; !d;}));
+    ASSERT(0, ({int a[1];int b=0;if (2 < 1 && a[100]) b = 1; b;}));
+    ASSERT(1, ({int a[1];int b=0;if (1 < 2 || a[100]) b = 1; b;}));
 
 
     return 0;
