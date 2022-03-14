@@ -56,6 +56,11 @@ void set2(IAA a, int i, int j) {
     a[i][j] = 1;
 }
 
+int counter() {
+    static int x = 0;
+    return x++;
+}
+
 int main() {
 
     ASSERT(4 , ({char x; x = 4; x; }));
@@ -109,6 +114,10 @@ int main() {
     ASSERT(1, ({int I = 1;int y = 1; I * y;}));
     ASSERT(1, ({IA a; set(a,3); a[3];}));
     ASSERT(1, ({IAA a; set2(a,3,3); a[3][3];}));
+
+    ASSERT(0, counter());
+    ASSERT(1, counter());
+    ASSERT(2, counter());
     
     return 0;
 }

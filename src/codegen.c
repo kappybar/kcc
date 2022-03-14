@@ -102,6 +102,26 @@ void codegen_gvar_init(Type *type, Node *init) {
     }
 }
 
+void codegen_gvar(Obj *obj) {
+    if (obj->is_extern) {
+        return;
+    }
+    char s[100];
+    strncpy(s, obj->name, obj->len);
+    s[obj->len] = '\0';
+    println(".data");
+
+    if (obj->is_static) {
+        println(".local %s", s);
+    } else {
+        println(".globl %s", s);
+    }
+
+    println("%s:", s);
+    codegen_gvar_init(obj->type, obj->init);
+    return;
+}
+
 void assign_label(Node *node) {
     char *s = calloc(10, sizeof(char));
     int cnt = counter();
@@ -240,20 +260,6 @@ void assign_continue_label(Node *node, int id) {
     }
 }
 
-void codegen_gvar(Obj *obj) {
-    if (obj->is_extern) {
-        return;
-    }
-    char s[100];
-    strncpy(s, obj->name, obj->len);
-    s[obj->len] = '\0';
-    println(".data");
-    println(".globl %s", s);
-    println("%s:", s);
-    codegen_gvar_init(obj->type, obj->init);
-    return;
-}
-
 void codegen_load(Type *type, const char *reg64, const char *reg32, const char *src) {
     switch(type->kind) {
     case TyLong:
@@ -310,7 +316,7 @@ void gen_addr(Node *node) {
     case NdLvar:
         strncpy(s, node->obj->name, node->obj->len);
         s[node->obj->len] = '\0';
-        if (node->obj->is_extern) {
+        if (node->obj->is_extern || node->obj->is_static) {
             println("  lea rax, [rip+%s]", s);
         } else {
             println("  lea rax, [rbp%+d] # %s", -node->obj->offset, s);
@@ -707,15 +713,32 @@ void codegen_expr(Node *node) {
     return;
 }
 
+void codegen_local_static(Obj *func) {
+    for (Scope *scope = func->locals;scope;scope = scope->prev) {
+        for (Obj *obj = scope->objs;obj;obj = obj->next) {
+            if (obj->is_static) {
+                codegen_gvar(obj);
+            }
+        }
+    }
+    return;
+}
+
 void codegen_function(Obj *func) {
-    if (!func->is_defined) {
+    if (!func->is_extern) {
         return;
     }
+    codegen_local_static(func);
+
     char name[func->len + 1];
     strncpy(name, func->name, func->len);
     name[func->len] = '\0';
     println(".text");
-    println(".globl %s", name);
+    if (func->is_static) {
+        println(".local %s", name);
+    } else {
+        println(".globl %s", name);
+    }
     println("%s:", name);
 
     // prologue

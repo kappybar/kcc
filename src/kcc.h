@@ -89,6 +89,7 @@ struct Type {
     // storage class spec
     bool is_typdef_temp; 
     bool is_extern_temp;
+    bool is_static_temp;
 };
 
 Type *new_type(TypeKind kind);
@@ -129,7 +130,7 @@ struct Obj {
     Node *init;
 
     // TyFunc
-    bool is_defined;
+    // bool is_defined;
     Node *body;
     Scope *locals;
     Obj *args;
@@ -140,6 +141,7 @@ struct Obj {
 
     // storage class spec
     bool is_extern;
+    bool is_static;
 };
 
 struct Struct {

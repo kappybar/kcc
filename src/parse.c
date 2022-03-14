@@ -3,8 +3,8 @@
 Struct *defined_structs;
 Enum *defined_enums;
 Typdef *defined_typdefs;
-Scope *locals;// &(Scope){};
-Scope *fun_locals;// = &(Scope){};
+Scope *locals;
+Scope *fun_locals;
 Obj *globals;
 
 Node *const_eval(Node *node);
@@ -295,6 +295,9 @@ Obj *new_obj(Token *token, Type *type) {
     
     obj->is_extern = type->is_extern_temp;
     type->is_extern_temp = false;
+
+    obj->is_static = type->is_static_temp;
+    type->is_static_temp = false;
     return obj;
 }
 
@@ -304,6 +307,12 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty) {
     fn->name = token->str;
     fn->args = params;
     fn->type = new_type_fun(return_ty, params_ty);
+
+    fn->is_extern = return_ty->is_extern_temp;
+    return_ty->is_extern_temp = false;
+
+    fn->is_static = return_ty->is_static_temp;
+    return_ty->is_static_temp = false;
     return fn;
 }
 
@@ -1305,7 +1314,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (is_typename(*token) || equal(*token, "typedef") || equal(*token, "extern")) {
+        if (is_typename(*token) || equal(*token, "typedef") || equal(*token, "extern") || equal(*token, "static")) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -1567,18 +1576,22 @@ void enum_list(Token **token, Enum *enm) {
     return;
 }
 
-// declspec = (typespec | "typedef" | "extern")*
+// declspec = (typespec | "typedef" | "extern" | "static")*
 Type *declspec(Token **token) {
     Type *type = NULL;
-    bool is_typdef = false, is_extern = false;
+    int is_typdef = 0, is_extern = 0, is_static = 0;
 
     while (1) {
         if (consume_keyword(token, "typedef")) {
-            is_typdef = true;
+            is_typdef ++;
             continue;
         }
         if (consume_keyword(token, "extern")) {
-            is_extern = true;
+            is_extern ++;
+            continue;
+        }
+        if (consume_keyword(token, "static")) {
+            is_static ++;
             continue;
         }
         if (is_typename(*token)) {
@@ -1596,11 +1609,12 @@ Type *declspec(Token **token) {
     if (!type) {
         error_at((*token)->str, "empty type name");
     }
-    if (is_typdef && is_extern) {
+    if (is_typdef + is_extern + is_static > 1) {
         error_at((*token)->str, "multiple storage classes in declaration");
     }
-    type->is_typdef_temp = is_typdef;
-    type->is_extern_temp = is_extern;
+    type->is_typdef_temp = (is_typdef > 0);
+    type->is_extern_temp = (is_extern > 0);
+    type->is_static_temp = (is_static > 0);
 
     return type;
 }
@@ -1698,10 +1712,20 @@ Node *declaration(Token **token, bool is_global) {
         } else {
             add_lvar(obj);
             Node *var = new_node_obj(obj);
-            if (base_type->is_extern_temp && consume(token, "=")) {
+
+            if (obj->is_extern && consume(token, "=")) {
                 error_at((*token)->str, "obj has extern and initializer");
             }
-            if (consume(token, "=")) {
+
+            if (obj->is_static) {
+                // static variable 
+                // global initializer
+                if (consume(token, "=")) {
+                    obj->init = initializer(token);
+                } else {
+                    obj->init = zeros_like(obj->type);
+                }
+            } else if (consume(token, "=")) {
                 cur->next = init_assign(var, initializer(token));
                 cur = cur->next;
             } else {
@@ -1720,7 +1744,9 @@ Node *declaration(Token **token, bool is_global) {
 void allocate_stack_offset(Obj *func) {
     int stack_size = 0;
     for (Scope *scope = func->locals;scope;scope = scope->prev) {
+        // fprintf(stderr, "addr : %d\n", scope);
         for (Obj *obj = scope->objs;obj;obj = obj->next) {
+            // display_obj(obj);
             int size = sizeof_type(obj->type);
             stack_size = align_to(stack_size, alignment(obj->type));
             stack_size += size;
@@ -1728,6 +1754,7 @@ void allocate_stack_offset(Obj *func) {
         }
     }
     func->stack_size = align_to(stack_size, 16);
+    // fprintf(stderr, "%d\n", func->stack_size);
     return;
 }
 
@@ -1740,13 +1767,14 @@ void def(Token **token) {
         return;
     }
 
+    // block scope
     Scope *new_locals = next_locals();
     Obj *fn = declarator(token, type);
 
     if (is_function(fn)) {
         add_gvar(fn);
         if (consume(token, ";")) {
-            fn->is_defined = false;
+            fn->is_extern = false;
         } else {
             // body
             expect(token, "{");
@@ -1758,7 +1786,7 @@ void def(Token **token) {
             }
 
             fn->body = node;
-            fn->is_defined = true;
+            fn->is_extern = true;
         }
 
         prev_locals(new_locals);
