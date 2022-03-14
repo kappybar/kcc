@@ -103,6 +103,9 @@ int main() {
     ASSERT(4, ({struct s1 x, y; x.m1 = 3; x.m2 = 1; y = x; y.m1 + y.m2; }));
     ASSERT(4, ({struct s1 x; x.m1 = 3; x.m1++; x.m1; }));
     ASSERT(4, ({struct s1 x; x.m1 = 3; ++x.m1;}));
+    ASSERT(9, ({struct s1 x[10]; x[0].m1=0, x[3].m1=3, x[9].m1=9; x[9].m1;}));
+    ASSERT(1, ({struct s1 x[10], *y;y = x; (y++)->m1 = 1; x[0].m1;}));
+    ASSERT(1, ({struct s1 x[10], *y;y = x; y++->m1 = 1; x[0].m1;}));
     ASSERT(0, E_0);
     ASSERT(1, E_1);
     ASSERT(0, ({enum e1 x;x = E_0;x;}));

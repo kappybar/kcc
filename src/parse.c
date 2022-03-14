@@ -752,13 +752,12 @@ Node *primary(Token **token) {
     return new_node_num(val);
 }
 
-// postfix = primary ( 
-//                      "[" expr "]"     | 
-//                      "(" argument ")" | 
-//                      "." ident        |
-//                      "->" ident 
-//                    )*
-//                    ("++" | "--")?
+// postfix = primary ( "[" expr "]"     | 
+//                     "(" argument ")" | 
+//                     "." ident        |
+//                     "->" ident       |
+//                     "++"             |
+//                     "--")*
 Node *postfix(Token **token) {
     Node *node = primary(token);
     while (1) {
@@ -786,6 +785,14 @@ Node *postfix(Token **token) {
             node->member = find_member(st, member);
             continue;
         }
+        if (consume(token, "++")) {
+            node = new_node_unary(NdPostInc, node);
+            continue;
+        } 
+        if (consume(token, "--")) {
+            node = new_node_unary(NdPostDec, node);
+            continue;
+        }
         if (consume(token, "(")) {
             error_at((*token)->str, "function pointer is not supported now\n");
             continue;
@@ -794,11 +801,7 @@ Node *postfix(Token **token) {
         break;
     }
 
-    if (consume(token, "++")) {
-        node = new_node_unary(NdPostInc, node);
-    } else if (consume(token, "--")) {
-        node = new_node_unary(NdPostDec, node);
-    }
+  
 
     return node;
 }
