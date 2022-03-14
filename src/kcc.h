@@ -213,6 +213,7 @@ typedef enum {
     NdMember,   //  .
     NdStmtExpr, // ({ .. })
     NdComma,    // ,
+    NdCast,     // cast
 } NodeKind;
 
 struct Node {
@@ -250,6 +251,9 @@ struct Node {
 
     // NdCase, NdDefault, NdBreak, NdContinue
     char *label;
+
+    // NdCast
+    Type *type_cast;
 };
 
 // new node

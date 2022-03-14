@@ -219,6 +219,15 @@ Type *get_common_type(Type *ty1, Type *ty2) {
     return sizeof_type(ty1) < sizeof_type(ty2) ? ty2 : ty1;
 }
 
+// temporary castable type
+bool castable(Type *from, Type *to) {
+    if (to->kind == TyVoid) return true;
+    if (from->kind != TyArray && to->kind == TyArray) return false;
+    if ((is_integer(from) || is_pointer(from)) &&
+        (is_integer(to)   || is_pointer(to))) return true;
+    return false;
+}
+
 void add_type(Node *node) {
     if (!node || node->type) {
         return;
@@ -367,6 +376,12 @@ void add_type(Node *node) {
         }
     case NdComma:
         node->type = node->rhs->type;
+        break;
+    case NdCast:
+        if (!castable(node->lhs->type, node->type_cast)) {
+            error("type error: impossible type cast");
+        }
+        node->type = node->type_cast;
         break;
     }
         

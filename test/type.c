@@ -118,6 +118,12 @@ int main() {
     ASSERT(0, counter());
     ASSERT(1, counter());
     ASSERT(2, counter());
+
+    ASSERT(0, (int)0);
+    ASSERT(1, (char)1);
+    ASSERT(0, (char)256);
+    ASSERT(0, (short)(1 << 16));
+    ASSERT(0, (int)(char)256);
     
     return 0;
 }

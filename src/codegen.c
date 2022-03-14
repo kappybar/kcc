@@ -626,6 +626,21 @@ void codegen_expr(Node *node) {
         stack_push("  push rax");
         return;
         }
+    case NdCast : {
+        codegen_expr(node->lhs);
+        stack_pop("  pop rax");
+        int to_size = is_pointer(node->type) ? 8 : sizeof_type(node->type);
+        // truncate
+        if (to_size == 1) {
+            println("  movsbl eax, al");
+        } else if (to_size == 2) {
+            println("  movswl eax, ax");
+        } else if (to_size == 4) {
+            println("  mov eax, eax");
+        }
+        stack_push("  push rax");
+        return;
+    }
     case NdReturn:
     case NdBlock:
     case NdIf:

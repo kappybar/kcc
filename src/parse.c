@@ -49,6 +49,7 @@ Node *argument(Token **token);
 Node *primary(Token **token);
 Node *postfix(Token **token);
 Node *unary(Token **token);
+Node *cast(Token **token);
 Node *mul(Token **token);
 Node *new_add(Node *lhs, Node *rhs);
 Node *new_sub(Node *lhs, Node *rhs);
@@ -835,24 +836,24 @@ Node *postfix(Token **token) {
     return node;
 }
 
-// unary =   ("+" | "-" | "*" | "&" | "~" | "!") unary
+// unary =   ("+" | "-" | "*" | "&" | "~" | "!") cast
 //         | ("++" | "--") unary
 //         | "sizeof" "(" typename ")"
 //         | "sizeof" unary
 //         | postfix
 Node *unary(Token **token) {
     if (consume(token, "+")) {
-        return unary(token);
+        return cast(token);
     } else if (consume(token, "-")) {
-        return new_node_binary(NdSub, new_node_num(0), unary(token));
+        return new_node_binary(NdSub, new_node_num(0), cast(token));
     } else if (consume(token, "*")) {
-        return new_node_unary(NdDeref, unary(token));
+        return new_node_unary(NdDeref, cast(token));
     } else if (consume(token, "&")) {
-        return new_node_unary(NdRef, unary(token));
+        return new_node_unary(NdRef, cast(token));
     } else if (consume(token, "~")) { 
-        return new_node_unary(NdNot, unary(token));
+        return new_node_unary(NdNot, cast(token));
     } else if (consume(token, "!")) {
-        return new_node_unary(NdLNot, unary(token));
+        return new_node_unary(NdLNot, cast(token));
     } else if (consume(token, "++")) {
         Node *node = unary(token);
         return new_node_binary(NdAssign, node, new_add(node, new_node_num(1)));
@@ -881,20 +882,34 @@ Node *unary(Token **token) {
     }
 }
 
-// mul = unary ("*" unary | "/" unary | "%" unary) *
+// cast =   unary
+//       | "(" typename ")" cast
+Node *cast(Token **token) {
+    if (equal(*token, "(") && is_typename((*token)->next)) {
+        expect(token, "(");
+        Type *type = typename(token);
+        expect(token, ")");
+        Node *node = new_node_unary(NdCast, cast(token));
+        node->type_cast = type;
+        return node;
+    }
+    return unary(token);
+}
+
+// mul = cast ("*" cast | "/" cast | "%" cast) *
 Node *mul(Token **token) {
-    Node *node = unary(token);
+    Node *node = cast(token);
     while (1) {
         if (consume(token, "*")) {
-            node = new_node_binary(NdMul, node, unary(token));
+            node = new_node_binary(NdMul, node, cast(token));
             continue;
         }
         if (consume(token, "/")) {
-            node = new_node_binary(NdDiv, node, unary(token));
+            node = new_node_binary(NdDiv, node, cast(token));
             continue;
         }
         if (consume(token, "%")) {
-            node = new_node_binary(NdMod, node, unary(token));
+            node = new_node_binary(NdMod, node, cast(token));
             continue;
         }
         break;

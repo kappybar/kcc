@@ -457,8 +457,16 @@ void display_node(Node *node, int indent) {
         break;
         }
     case NdComma : 
-        fprintf(stderr, "Comma\n");
+        fprintf(stderr, "Comma");
+        display_type(node->type);
+        fprintf(stderr, "\n");
         display_child(node, indent);
+        break;
+    case NdCast : 
+        fprintf(stderr, "Cast");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_node(node->lhs, indent + 1);
         break;
     }
     
