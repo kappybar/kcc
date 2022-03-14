@@ -130,7 +130,6 @@ struct Obj {
     Node *init;
 
     // TyFunc
-    // bool is_defined;
     Node *body;
     Scope *locals;
     Obj *args;

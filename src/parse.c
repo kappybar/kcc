@@ -1744,9 +1744,7 @@ Node *declaration(Token **token, bool is_global) {
 void allocate_stack_offset(Obj *func) {
     int stack_size = 0;
     for (Scope *scope = func->locals;scope;scope = scope->prev) {
-        // fprintf(stderr, "addr : %d\n", scope);
         for (Obj *obj = scope->objs;obj;obj = obj->next) {
-            // display_obj(obj);
             int size = sizeof_type(obj->type);
             stack_size = align_to(stack_size, alignment(obj->type));
             stack_size += size;
@@ -1754,7 +1752,6 @@ void allocate_stack_offset(Obj *func) {
         }
     }
     func->stack_size = align_to(stack_size, 16);
-    // fprintf(stderr, "%d\n", func->stack_size);
     return;
 }
 
