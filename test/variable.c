@@ -26,6 +26,8 @@ char addsub(int a, char b, int c, char d,int e, char f){
     return a - b + c - d + e + f - g + h;
 }
 
+extern int ex1;
+
 int main() {
 
     ASSERT(0 , hoge);
@@ -75,6 +77,10 @@ int main() {
     ASSERT(0, ({int *d;int x;d = &x; !d;}));
     ASSERT(0, ({int a[1];int b=0;if (2 < 1 && a[100]) b = 1; b;}));
     ASSERT(1, ({int a[1];int b=0;if (1 < 2 || a[100]) b = 1; b;}));
+    ASSERT(1, ex1);
+    ASSERT(2, ({extern int ex2; ex2;}));
+    ASSERT(3, ({extern int ex2; ex2=3;}));
+    ASSERT(4, ({extern int ex2; add(ex1, ex2);}));
 
 
     return 0;

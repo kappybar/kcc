@@ -48,7 +48,8 @@ Type *copy_type(Type *ty) {
     type->array_size = ty->array_size;
     type->type_struct = ty->type_struct;
 
-    type->is_typdef = ty->is_typdef;
+    type->is_typdef_temp = ty->is_typdef_temp;
+    type->is_extern_temp = ty->is_extern_temp;
     return type;
 }
 

@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// extern
+int ex1 = 1;
+int ex2 = 2;
+
 void assert(int expected, int actual, char *code) {
     if (expected == actual) {
         printf("%s => %d\n", code, actual);

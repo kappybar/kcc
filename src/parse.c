@@ -289,6 +289,9 @@ Obj *new_obj(Token *token, Type *type) {
     obj->name = token->str;
     obj->len = token->len;
     obj->type = type;
+    
+    obj->is_extern = type->is_extern_temp;
+    type->is_extern_temp = false;
     return obj;
 }
 
@@ -1299,7 +1302,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (is_typename(*token) || equal(*token, "typedef")) {
+        if (is_typename(*token) || equal(*token, "typedef") || equal(*token, "extern")) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -1561,14 +1564,18 @@ void enum_list(Token **token, Enum *enm) {
     return;
 }
 
-// declspec = (typespec | "typedef")*
+// declspec = (typespec | "typedef" | "extern")*
 Type *declspec(Token **token) {
     Type *type = NULL;
-    bool is_typdef = false;
+    bool is_typdef = false, is_extern = false;
 
     while (1) {
         if (consume_keyword(token, "typedef")) {
             is_typdef = true;
+            continue;
+        }
+        if (consume_keyword(token, "extern")) {
+            is_extern = true;
             continue;
         }
         if (is_typename(*token)) {
@@ -1586,7 +1593,11 @@ Type *declspec(Token **token) {
     if (!type) {
         error_at((*token)->str, "empty type name");
     }
-    type->is_typdef = is_typdef;
+    if (is_typdef && is_extern) {
+        error_at((*token)->str, "multiple storage classes in declaration");
+    }
+    type->is_typdef_temp = is_typdef;
+    type->is_extern_temp = is_extern;
 
     return type;
 }
@@ -1642,7 +1653,7 @@ Obj *direct_declarator(Token **token, Type *type) {
         }
 
         // obj
-        if (!type->is_typdef) {
+        if (!type->is_typdef_temp) {
             find_obj(token_ident, true); // redeclaration = true
         }
         while (consume(token, "[")) {
@@ -1679,11 +1690,14 @@ Node *declaration(Token **token, bool is_global) {
 
         Obj *obj = declarator(token, base_type);
 
-        if (base_type->is_typdef) {
+        if (base_type->is_typdef_temp) {
             add_typdef(obj);
         } else {
             add_lvar(obj);
             Node *var = new_node_obj(obj);
+            if (base_type->is_extern_temp && consume(token, "=")) {
+                error_at((*token)->str, "obj has extern and initializer");
+            }
             if (consume(token, "=")) {
                 cur->next = init_assign(var, initializer(token));
                 cur = cur->next;
@@ -1749,11 +1763,14 @@ void def(Token **token) {
             fn->is_defined = true;
             allocate_stack_offset(fn);
         }
-    } else if (type->is_typdef) {
+    } else if (type->is_typdef_temp) {
         add_typdef(fn);
         expect(token, ";");
     } else {
         add_gvar(fn);
+        if (type->is_extern_temp && consume(token, "=")) {
+            error_at((*token)->str, "obj has extern and initializer");
+        }
         // global variable initialization
         if (consume(token, "=")) {
             fn->init = initializer(token);

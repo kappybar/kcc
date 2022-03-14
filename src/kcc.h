@@ -86,8 +86,9 @@ struct Type {
     // TyStruct
     Struct *type_struct;
 
-    // 
-    bool is_typdef;
+    // storage class spec
+    bool is_typdef_temp; 
+    bool is_extern_temp;
 };
 
 Type *new_type(TypeKind kind);
@@ -136,6 +137,9 @@ struct Obj {
      
     // Enum const
     int enum_value;
+
+    // storage class spec
+    bool is_extern;
 };
 
 struct Struct {

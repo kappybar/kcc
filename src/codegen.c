@@ -241,10 +241,14 @@ void assign_continue_label(Node *node, int id) {
 }
 
 void codegen_gvar(Obj *obj) {
+    if (obj->is_extern) {
+        return;
+    }
     char s[100];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
     println(".data");
+    println(".globl %s", s);
     println("%s:", s);
     codegen_gvar_init(obj->type, obj->init);
     return;
@@ -306,7 +310,11 @@ void gen_addr(Node *node) {
     case NdLvar:
         strncpy(s, node->obj->name, node->obj->len);
         s[node->obj->len] = '\0';
-        println("  lea rax, [rbp%+d] # %s", -node->obj->offset, s);
+        if (node->obj->is_extern) {
+            println("  lea rax, [rip+%s]", s);
+        } else {
+            println("  lea rax, [rbp%+d] # %s", -node->obj->offset, s);
+        }
         stack_push("  push rax");
         break; 
     case NdGvar:
