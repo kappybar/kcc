@@ -71,6 +71,14 @@ enum e4 {
     E28 = (1+2*3)+3-(1-3),
 };
 
+typedef enum {
+    NdNum,      // num
+    NdAdd,      // +
+    NdSub,      // -
+    NdMul,      // *
+    NdDiv,      // /
+} NodeKind;
+
 struct Node {
     struct Node *lhs;
     struct Node *rhs;
@@ -82,6 +90,11 @@ struct List {
     int car;
     List *cdr;
 };
+
+typedef struct {
+    int m1;
+    char m2;
+} S7;
 
 int main() {
 
@@ -106,6 +119,11 @@ int main() {
     ASSERT(9, ({struct s1 x[10]; x[0].m1=0, x[3].m1=3, x[9].m1=9; x[9].m1;}));
     ASSERT(1, ({struct s1 x[10], *y;y = x; (y++)->m1 = 1; x[0].m1;}));
     ASSERT(1, ({struct s1 x[10], *y;y = x; y++->m1 = 1; x[0].m1;}));
+    ASSERT(1, ({S7 a; a.m1 = 1; a.m1;}));
+    ASSERT(1, ({struct {int m;} a; a.m = 1; a.m;}));
+    ASSERT(1, ({union {int m;} a; a.m = 1; a.m;}));
+    ASSERT(0, NdNum);
+    ASSERT(1, NdAdd);
     ASSERT(0, E_0);
     ASSERT(1, E_1);
     ASSERT(0, ({enum e1 x;x = E_0;x;}));

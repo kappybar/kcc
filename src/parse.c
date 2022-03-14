@@ -331,8 +331,10 @@ Obj *new_string(Token *token) {
 
 Struct *new_struct_or_union(Token *token_ident) {
     Struct *st = calloc(1, sizeof(Struct));
-    st->name = token_ident->str;
-    st->name_len = token_ident->len;
+    if (token_ident) {
+        st->name = token_ident->str;
+        st->name_len = token_ident->len;
+    }
     st->align = 1;
 
     st->next = defined_structs;
@@ -380,8 +382,10 @@ void add_member_union(Struct *uni, Obj *member) {
 
 Enum *new_enum(Token *token) {
     Enum *enm = calloc(1, sizeof(Enum));
-    enm->name = token->str;
-    enm->name_len = token->len;
+    if (token) {
+        enm->name = token->str;
+        enm->name_len = token->len;
+    }
 
     enm->next = defined_enums;
     defined_enums = enm;
@@ -1458,12 +1462,12 @@ Type *typespec(Token **token) {
     return type;
 }
 
-// struct_spec = "struct" ident ("{" struct_union_declaration "}")? 
-//               "union"  ident ("{" struct_union_declaration "}")? 
+// struct_spec = "struct" ident? ("{" struct_union_declaration "}")? 
+//               "union"  ident? ("{" struct_union_declaration "}")? 
 Struct *struct_spec(Token **token) {
     if (consume_keyword(token, "struct")) {
-        Token *token_ident = expect_ident(token);
-        Struct *st = find_struct(token_ident);
+        Token *token_ident = consume_ident(token);
+        Struct *st = token_ident ? find_struct(token_ident) : NULL;
         if (!st) {
             st = new_struct_or_union(token_ident);
         } 
@@ -1474,8 +1478,8 @@ Struct *struct_spec(Token **token) {
         return st;
     }
     if (consume_keyword(token, "union")) {
-        Token *token_ident = expect_ident(token);
-        Struct *uni = find_struct(token_ident);
+        Token *token_ident = consume_ident(token);
+        Struct *uni = token_ident ? find_struct(token_ident) : NULL;
         if (!uni) {
             uni = new_struct_or_union(token_ident);
         } 
@@ -1514,11 +1518,11 @@ void struct_union_declaration(Token **token, Struct *st, bool is_union) {
 }
 
 
-// enum_spec = "enum" ident ("(" enum_list ")")?
+// enum_spec = "enum" ident? ("(" enum_list ")")?
 Enum *enum_spec(Token **token) {
     expect_keyword(token, "enum");
-    Token *token_ident = expect_ident(token);
-    Enum *enm = find_enum(token_ident);
+    Token *token_ident = consume_ident(token);
+    Enum *enm = token_ident ? find_enum(token_ident) : NULL;
     if (!enm) {
         enm = new_enum(token_ident);
     }
