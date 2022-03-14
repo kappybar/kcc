@@ -506,6 +506,12 @@ void codegen_expr(Node *node) {
     case NdRef:
         gen_addr(node->lhs);
         return;
+    case NdNot:
+        codegen_expr(node->lhs);
+        stack_pop("  pop rax");
+        println("  not rax");
+        stack_push("  push rax");
+        return;
     case NdFuncall: {
         int num_of_arg = 0;
         for (Node *nd = node->arguments;nd;nd = nd->next) {

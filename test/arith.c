@@ -57,5 +57,7 @@ int main() {
     ASSERT(2, 0 ? 5 : 2);
     ASSERT(2, 0 ? 5 : 1 ? 2 : 3);
     ASSERT(5, 1 ? 5 : 1 ? 2 : 3);
+    ASSERT(-2, ~1);
+    ASSERT(-101, ~100);
     return 0;
 }

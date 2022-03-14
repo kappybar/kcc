@@ -317,6 +317,9 @@ void add_type(Node *node) {
     case NdRef:
         node->type = new_type_ptr(node->lhs->type);
         break;
+    case NdNot:
+        node->type = node->lhs->type;
+        break;
     case NdBlock:
     case NdFor:
     case NdReturn:

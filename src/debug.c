@@ -399,7 +399,13 @@ void display_node(Node *node, int indent) {
         display_node(node->lhs, indent + 1);
         break;
     case NdRef:
-        fprintf(stderr, "Ref\n");
+        fprintf(stderr, "Ref");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_node(node->lhs, indent + 1);
+        break;
+    case NdNot:
+        fprintf(stderr, "Not");
         display_type(node->type);
         fprintf(stderr, "\n");
         display_node(node->lhs, indent + 1);
