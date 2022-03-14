@@ -49,6 +49,9 @@ int main() {
     ASSERT(3, ({int a = 13; a %= 5; a;}));
     ASSERT(16, ({int a = 2; a <<= 3; a;}));
     ASSERT(2, ({int a = 17; a >>= 3; a;}));
+    ASSERT(1, ({int a = 3; a &= 5; a;}));
+    ASSERT(15, ({int a = 10; a ^= 5; a;}));
+    ASSERT(7, ({int a = 3; a |= 5; a;}));
     ASSERT(2, ({int a = 1; ++a;}));
     ASSERT(2, ({int a = 1,b = ++a; b;}));
     ASSERT(0, ({int a = 1; --a;}));

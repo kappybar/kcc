@@ -19,7 +19,7 @@ int isreserved(char *p) {
     char *len2tokens[] = {"<=", ">=", "==", "!=", "->",
                           "<<", ">>",
                           "&&", "||",
-                          "+=", "-=", "*=", "/=", "%=",
+                          "+=", "-=", "*=", "/=", "%=", "&=", "^=", "|=",
                           "++", "--"};
     for (int i = 0;i < sizeof(len2tokens) / sizeof(*len2tokens); i++) {
         if (startwith(p, len2tokens[i])) {

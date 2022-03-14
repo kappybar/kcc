@@ -1101,7 +1101,10 @@ Node *conditional(Token **token) {
 //                       "/="  assign | 
 //                       "%="  assign | 
 //                       "<<=" assign | 
-//                       ">>=" assign)?
+//                       ">>=" assign |
+//                       "&="  assign |
+//                       "^="  assign |
+//                       "|="  assign )* 
 Node *assign(Token **token) {
     Node *node = conditional(token);
     
@@ -1128,6 +1131,15 @@ Node *assign(Token **token) {
     }
     if (consume(token, ">>=")) {
         node = new_node_binary(NdAssign, node,  new_node_binary(NdSar, node, assign(token)));
+    }
+    if (consume(token, "&=")) {
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdAnd, node, assign(token)));
+    }
+    if (consume(token, "^=")) {
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdXor, node, assign(token)));
+    }
+    if (consume(token, "|=")) {
+        node = new_node_binary(NdAssign, node,  new_node_binary(NdOr, node, assign(token)));
     }
 
 
