@@ -202,6 +202,7 @@ typedef enum {
     NdDeref,    // *
     NdRef,      // &
     NdNot,      // ~
+    NdLNot,     // !
     NdFuncall,  // funtion call
     NdInit,     // { .. , .. }
     NdMember,   //  .

@@ -806,7 +806,7 @@ Node *postfix(Token **token) {
     return node;
 }
 
-// unary =   ("+" | "-" | "*" | "&" | "~") unary
+// unary =   ("+" | "-" | "*" | "&" | "~" | "!") unary
 //         | ("++" | "--") unary
 //         | "sizeof" "(" typename ")"
 //         | "sizeof" unary
@@ -822,7 +822,9 @@ Node *unary(Token **token) {
         return new_node_unary(NdRef, unary(token));
     } else if (consume(token, "~")) { 
         return new_node_unary(NdNot, unary(token));
-    }else if (consume(token, "++")) {
+    } else if (consume(token, "!")) {
+        return new_node_unary(NdLNot, unary(token));
+    } else if (consume(token, "++")) {
         Node *node = unary(token);
         return new_node_binary(NdAssign, node, new_add(node, new_node_num(1)));
     } else if (consume(token, "--")) {

@@ -320,6 +320,9 @@ void add_type(Node *node) {
     case NdNot:
         node->type = node->lhs->type;
         break;
+    case NdLNot:
+        node->type = new_type(TyInt);
+        break;
     case NdBlock:
     case NdFor:
     case NdReturn:

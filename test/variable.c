@@ -69,6 +69,7 @@ int main() {
     ASSERT(0, ({int a[3]={0,1,2};int *b = a+1; --b; *b;}));
     ASSERT(0, ({int a[3]={0,1,2};int *b = a; b++[0];}));
     ASSERT(0, ({int *d;int x;d = &x;*(d++) = 0; x;}));
+    ASSERT(0, ({int *d;int x;d = &x; !d;}));
 
 
     return 0;

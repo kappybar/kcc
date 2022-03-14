@@ -410,6 +410,12 @@ void display_node(Node *node, int indent) {
         fprintf(stderr, "\n");
         display_node(node->lhs, indent + 1);
         break;
+    case NdLNot:
+        fprintf(stderr, "Logical Not");
+        display_type(node->type);
+        fprintf(stderr, "\n");
+        display_node(node->lhs, indent + 1);
+        break;
     case NdFuncall: {
         char name[node->func_name_len + 1];
         strncpy(name, node->func_name, node->func_name_len);

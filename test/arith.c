@@ -59,5 +59,9 @@ int main() {
     ASSERT(5, 1 ? 5 : 1 ? 2 : 3);
     ASSERT(-2, ~1);
     ASSERT(-101, ~100);
+    ASSERT(1, !0);
+    ASSERT(0, !1);
+    ASSERT(0, !1000);
+    ASSERT(0, !-1000);
     return 0;
 }
