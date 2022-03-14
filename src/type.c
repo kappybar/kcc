@@ -214,6 +214,11 @@ Type *fill_absent_type(Type *type_absent, Type *type_fill) {
     }
 }
 
+Type *get_common_type(Type *ty1, Type *ty2) {
+    assert(is_integer(ty1) && is_integer(ty2));
+    return sizeof_type(ty1) < sizeof_type(ty2) ? ty2 : ty1;
+}
+
 void add_type(Node *node) {
     if (!node || node->type) {
         return;
@@ -249,7 +254,7 @@ void add_type(Node *node) {
             node->lhs = tmp;
         }
         if (is_integer(node->lhs->type) && is_integer(node->rhs->type)) {
-            node->type = new_type(TyInt);
+            node->type = get_common_type(node->lhs->type, node->rhs->type);
         } else if (is_integer(node->rhs->type)) {
             switch (node->lhs->type->kind) {
             case TyArray :
@@ -274,9 +279,14 @@ void add_type(Node *node) {
     case NdAnd:
     case NdXor:
     case NdOr:
+        if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
+            error("type error : cannot operate this two type\n");
+        }
+        node->type = get_common_type(node->lhs->type, node->rhs->type);
+        break;
     case NdLAnd:
     case NdLOr:
-        if (!is_integer(node->lhs->type) || !is_integer(node->rhs->type)) {
+        if (node->lhs->type->kind == TyStruct || node->rhs->type->kind == TyStruct) {
             error("type error : cannot operate this two type\n");
         }
         node->type = new_type(TyInt);
@@ -319,9 +329,15 @@ void add_type(Node *node) {
         node->type = new_type_ptr(node->lhs->type);
         break;
     case NdNot:
+        if (!is_integer(node->lhs->type)) {
+            error("type error : cannot operate this type\n");
+        }
         node->type = node->lhs->type;
         break;
     case NdLNot:
+        if (node->lhs->type->kind == TyStruct) {
+            error("type error : cannot operate this type\n");
+        }
         node->type = new_type(TyInt);
         break;
     case NdBlock:

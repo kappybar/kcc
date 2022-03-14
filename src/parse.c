@@ -481,6 +481,16 @@ bool is_typename(Token *token) {
     return false;
 }
 
+bool is_stroge_spec(Token *token) {
+    char *storage_class_spec[] = {"extern", "static", "typedef"};
+    for (int i = 0;i < sizeof(storage_class_spec) / sizeof(*storage_class_spec); i++) {
+        if (equal(token, storage_class_spec[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Node *const_eval(Node *node) {
     switch (node->kind) {
     case NdNum:
@@ -1314,7 +1324,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (is_typename(*token) || equal(*token, "typedef") || equal(*token, "extern") || equal(*token, "static")) {
+        if (is_typename(*token) || is_stroge_spec(*token)) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
