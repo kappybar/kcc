@@ -3,8 +3,8 @@
 Struct *defined_structs;
 Enum *defined_enums;
 Typdef *defined_typdefs;
-Scope *locals = &(Scope){};
-Scope *fun_locals = &(Scope){};
+Scope *locals;// &(Scope){};
+Scope *fun_locals;// = &(Scope){};
 Obj *globals;
 
 Node *const_eval(Node *node);
@@ -175,6 +175,9 @@ void prev_locals(Scope *new_locals) {
 }
 
 Obj *find_lvar(Token *token, bool redeclaration) {
+    if (!locals) {
+        return NULL;
+    }
     char *name = token->str;
     int len = token->len;
     for (Obj *obj = locals->objs;obj; obj = obj->next) {
@@ -1736,14 +1739,13 @@ void def(Token **token) {
     if (consume(token, ";")) {
         return;
     }
+
+    Scope *new_locals = next_locals();
     Obj *fn = declarator(token, type);
 
     if (is_function(fn)) {
         add_gvar(fn);
         if (consume(token, ";")) {
-            locals->prev = fun_locals;
-            fun_locals = locals;
-            fn->locals = fun_locals;
             fn->is_defined = false;
         } else {
             // body
@@ -1755,17 +1757,17 @@ void def(Token **token) {
                 add_type(cur);
             }
 
-            locals->prev = fun_locals;
-            fun_locals = locals;
-
             fn->body = node;
-            fn->locals = fun_locals;
             fn->is_defined = true;
-            allocate_stack_offset(fn);
         }
+
+        prev_locals(new_locals);
+        fn->locals = fun_locals;
+        allocate_stack_offset(fn);
     } else if (type->is_typdef_temp) {
         add_typdef(fn);
         expect(token, ";");
+        prev_locals(new_locals);
     } else {
         add_gvar(fn);
         if (type->is_extern_temp && consume(token, "=")) {
@@ -1778,11 +1780,11 @@ void def(Token **token) {
             fn->init = zeros_like(fn->type);
         }
         expect(token, ";");
+        prev_locals(new_locals);
     }
 
     
-    locals = &(Scope){};
-    fun_locals = &(Scope){};
+    fun_locals = NULL;
     return;
 }
 
