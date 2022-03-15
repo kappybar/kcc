@@ -348,6 +348,8 @@ Obj *new_string(Token *token) {
 
     obj->init = new_node(NdInit);
     obj->init->body = head.next;
+
+    obj->is_static = true;
     return obj;
 }
 
