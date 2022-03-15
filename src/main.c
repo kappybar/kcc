@@ -34,13 +34,9 @@ int main(int argc,char **argv) {
 
     stdout_file = fopen("out_file.txt", "w");
     if (!stdout_file) error("cannot open out_file");
-    fprintf(stdout, "OUT FILE\n");
-    fflush(stdout);
 
     stderr_file = fopen("err_file.txt", "w");
     if (!stderr_file) error("cannot open err_file");
-    fprintf(stderr, "ERR FILE\n");
-    fflush(stderr);
     #endif
 
     parse_args(argc, argv);

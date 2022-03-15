@@ -28,7 +28,7 @@ src/%2.s: kcc src/%.c
 	$(CC) -o src/$*2.i -E -P -C src/$*.c -DKCC_
 	./kcc -o src/$*2.s src/$*2.i 
 
-kcc2 : $(ASMS2)
+kcc2 : $(ASMS2) io_file
 	$(CC) -o kcc2 $(ASMS2) 
 
 # 3rd generation
@@ -36,10 +36,15 @@ src/%3.s: kcc2 src/%.c
 	$(CC) -o src/$*3.i -E -P -C src/$*.c -DKCC_
 	./kcc2 -o src/$*3.s src/$*3.i 
 
-kcc3 : $(ASMS3)
+kcc3 : $(ASMS3) io_file
 	$(CC) -o kcc3 $(ASMS3) 
 
 $(OBJS) : src/kcc.h src/help.h
+
+io_file:
+	touch in_file.txt
+	touch out_file.txt
+	touch err_file.txt
 
 # test1
 test/%.exe: kcc test/%.c
@@ -71,6 +76,6 @@ test3 : $(TESTS3)
 test_all: test test2 test3
 
 clean : 
-	rm kcc kcc2 kcc3 src/*.o tmp.s tmp debug test/*.exe test/*.s test/*.i src/*.i src/*.s src/*.o
+	rm kcc kcc2 kcc3 src/*.o tmp.s tmp debug test/*.exe test/*.s test/*.i src/*.i src/*.s src/*.o *.txt
 
 .PHONY: clean tests
