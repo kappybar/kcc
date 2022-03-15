@@ -63,5 +63,7 @@ int main() {
     ASSERT(0, !1);
     ASSERT(0, !1000);
     ASSERT(0, !-1000);
+    ASSERT(1, -1 <= 0);
+    ASSERT(0, -1 >= 0);
     return 0;
 }

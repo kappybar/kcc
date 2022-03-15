@@ -1,5 +1,6 @@
 #include "test.h"
 
+const char *args_reg64[6] = {"rdi", "rsi", "rdx", "rcx", "r8" , "r9" };
 int hoge;
 int x;
 int y[10];
@@ -84,6 +85,7 @@ int main() {
     ASSERT(4, ({extern int ex2; add(ex1, ex2);}));
     ASSERT(2, exf(2));
     ASSERT(5, exf(5));
+    ASSERT(0, ({int x = -1; x >= 0;}));
 
 
     return 0;

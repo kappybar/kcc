@@ -267,7 +267,7 @@ void codegen_load(Type *type, const char *reg64, const char *reg32, const char *
         println("  mov %s, QWORD PTR [%s]", reg64, src);
         break;
     case TyInt :
-        println("  mov %s, DWORD PTR [%s]", reg32, src);
+        println("  movsx %s, DWORD PTR [%s]", reg64, src);
         break;
     case TyShort :
         println("  movsx %s, WORD PTR [%s]", reg32, src);

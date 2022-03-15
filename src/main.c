@@ -28,18 +28,22 @@ void parse_args(int argc, char **argv) {
 }
 
 int main(int argc,char **argv) {
-    parse_args(argc, argv);
-
     #ifdef KCC_
-    stdin_file = fopen("in_file", "r");
+    stdin_file = fopen("in_file.txt", "r");
     if (!stdin_file) error("cannot open in_file");
 
-    stdout_file = fopen("out_file", "w");
+    stdout_file = fopen("out_file.txt", "w");
     if (!stdout_file) error("cannot open out_file");
+    fprintf(stdout, "OUT FILE\n");
+    fflush(stdout);
 
-    stderr_file = fopen("err_file", "w");
+    stderr_file = fopen("err_file.txt", "w");
     if (!stderr_file) error("cannot open err_file");
+    fprintf(stderr, "ERR FILE\n");
+    fflush(stderr);
     #endif
+
+    parse_args(argc, argv);
 
     // tokenize
     Token *token = tokenize_file(input_path);
