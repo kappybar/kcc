@@ -251,7 +251,7 @@ char *read_file(char *path) {
     }
 
     char *buf;
-    size_t buflen;
+    long buflen;
     FILE *out = open_memstream(&buf, &buflen);
 
     while (1) {

@@ -13,7 +13,7 @@ Type *new_type_ptr(Type *ty) {
     return type;
 }
 
-Type *new_type_array(Type *ty, size_t size) {
+Type *new_type_array(Type *ty, long size) {
     Type *type = calloc(1, sizeof(Type));
     type->kind = TyArray;
     type->ptr_to = ty;
@@ -215,7 +215,9 @@ Type *fill_absent_type(Type *type_absent, Type *type_fill) {
 }
 
 Type *get_common_type(Type *ty1, Type *ty2) {
-    assert(is_integer(ty1) && is_integer(ty2));
+    if (!is_integer(ty1) || !is_integer(ty2)) {
+        error("cannot get common type\n");
+    }
     return sizeof_type(ty1) < sizeof_type(ty2) ? ty2 : ty1;
 }
 

@@ -25,7 +25,7 @@ debug : $(DEBUGS)
 src/main_debug.o : src/main.c 
 	$(CC)    -c -o src/main_debug.o $< -DDEBUG_  
 
-$(OBJS) : src/kcc.h
+$(OBJS) : src/kcc.h src/help.h
 
 clean : 
 	rm kcc src/*.o tmp.s tmp debug test/*.exe test/*.s test/*.i

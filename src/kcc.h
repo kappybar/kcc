@@ -1,12 +1,5 @@
 #pragma once
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdarg.h>
-#include <assert.h>
+#include "help.h"
 
 typedef struct Token Token;
 typedef struct Type Type;
@@ -81,7 +74,7 @@ struct Type {
     Type *params;
 
     // TyArray
-    size_t array_size;
+    long array_size;
 
     // TyStruct
     Struct *type_struct;
@@ -94,7 +87,7 @@ struct Type {
 
 Type *new_type(TypeKind kind);
 Type *new_type_ptr(Type *ty);
-Type *new_type_array(Type *ty, size_t size);
+Type *new_type_array(Type *ty, long size);
 Type *new_type_struct(Struct *s);
 Type *new_type_fun(Type *return_ty, Type *params_ty);
 Type *copy_type(Type *ty);

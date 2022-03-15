@@ -772,7 +772,9 @@ void codegen_function(Obj *func) {
     for (Node *cur = func->body;cur;cur = cur->next) {
         codegen_stmt(cur);
     }
-    assert(depth == 0);
+    if (depth != 0) {
+        error("stack depth not equal 0\n");
+    }
 
     // epilogue
     println("  mov rsp, rbp");
