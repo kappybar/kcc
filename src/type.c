@@ -33,6 +33,10 @@ Type *new_type_fun(Type *return_ty, Type *params_ty) {
     type->kind = TyFunc;
     type->return_ty = return_ty;
     type->params = params_ty;
+    if (params_ty) {
+        type->is_varlen = params_ty->is_varlen;
+        params_ty->is_varlen = false;
+    }
     return type;
 }
 
@@ -258,7 +262,6 @@ void add_type(Node *node) {
         node->type = node->obj->type;
         break;
     case NdAdd:
-    case NdSub:
         if (!is_integer(node->rhs->type)) {
             Node *tmp = node->rhs;
             node->rhs = node->lhs;
@@ -266,21 +269,22 @@ void add_type(Node *node) {
         }
         if (is_integer(node->lhs->type) && is_integer(node->rhs->type)) {
             node->type = get_common_type(node->lhs->type, node->rhs->type);
-        } else if (is_integer(node->rhs->type)) {
-            switch (node->lhs->type->kind) {
-            case TyArray :
-                node->type = new_type_array(node->lhs->type->ptr_to, ptr_to_size(node->lhs->type));
-                break;
-            case TyPtr :
-                node->type = new_type_ptr(node->lhs->type->ptr_to);
-                break;
-            default:
-                error("type error : cannot add this two type\n");    
-            }
+        } else if (is_integer(node->rhs->type) && is_pointer(node->lhs->type)) {
+            node->type = new_type_ptr(node->lhs->type->ptr_to);
         } else {
             error("type error : cannot add this two type\n");
         }
-
+        break;
+    case NdSub:
+        if (is_integer(node->lhs->type) && is_integer(node->rhs->type)) {
+            node->type = get_common_type(node->lhs->type, node->rhs->type);
+        } else if (is_pointer(node->lhs->type) && is_integer(node->rhs->type)) {
+            node->type = new_type_ptr(node->lhs->type->ptr_to);
+        } else if (is_pointer(node->lhs->type) && is_pointer(node->rhs->type)) {
+            node->type = new_type(TyLong);
+        } else {
+            error("type error : cannot sub this two type\n");
+        }
         break;
     case NdMul:
     case NdDiv:

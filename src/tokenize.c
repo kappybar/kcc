@@ -13,7 +13,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
 }
 
 int isreserved(char *p) {
-    if (startwith(p, "<<=") || startwith(p, ">>=")) {
+    if (startwith(p, "<<=") || startwith(p, ">>=") || startwith(p, "...")) {
         return 3;
     }
     char *len2tokens[] = {"<=", ">=", "==", "!=", "->",
@@ -211,21 +211,21 @@ Token *tokenize(char *p) {
             continue;
         }
 
+        // ident
+        if (is_ident1(p)) {
+            cur = new_token(TkIdent, cur, p);
+            char *start = p++;
+            while(is_ident2(p)) p++;
+            cur->len = p - start;
+            continue;
+        }
+
         // reserved
         int len = isreserved(p);
         if (len > 0) {
             cur = new_token(TkReserved, cur, p);
             cur->len = len;
             p += len;
-            continue;
-        }
-
-        // ident
-        if (is_ident1(p)) {
-            cur = new_token(TkIdent, cur, p);
-            char *start = p;
-            while(is_ident2(p)) p++;
-            cur->len = p - start;
             continue;
         }
 

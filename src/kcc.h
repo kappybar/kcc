@@ -1,5 +1,15 @@
 #pragma once
+
+#ifdef KCC_
 #include "help.h"
+#else
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <stdbool.h>
+#endif
 
 typedef struct Token Token;
 typedef struct Type Type;
@@ -86,6 +96,9 @@ struct Type {
 
     // type-qualifier
     bool is_const_temp;
+
+    // ...
+    bool is_varlen;
 };
 
 Type *new_type(TypeKind kind);
@@ -275,6 +288,9 @@ int counter();
 int align_to(int x, int align);
 void error(char *fmt, ...);
 void error_at(char *loc, char *fmt, ...);
+
+extern const int SIZEOF_BUILTIN_VA_LIST;
+extern const int NAMELEN_BUILTIN_VA_LIST;
 
 //
 // debug.c

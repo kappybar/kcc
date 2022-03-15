@@ -21,7 +21,6 @@ test : $(TESTS)
 
 debug : $(DEBUGS)
 	$(CC) -o debug $(DEBUGS) 
-	./debug -o test/test.s test/test.c
 
 src/main_debug.o : src/main.c 
 	$(CC)    -c -o src/main_debug.o $< -DDEBUG_  

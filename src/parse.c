@@ -1370,7 +1370,7 @@ void add_param_to_locals(Obj *param) {
     return;
 }
 
-// params = declspce declarator ("," declspec declarator) * 
+// params = declspce declarator ("," declspec declarator)* ("," "...")?
 Type *params(Token **token) {
     Type *type = declspec(token);
 
@@ -1378,6 +1378,7 @@ Type *params(Token **token) {
     Obj *cur = &head;
     Type head_ty;
     Type *cur_ty = &head_ty;
+    bool is_varlen = false;
     
     cur->next = declarator(token, type);
     cur_ty->next = cur->next->type;
@@ -1385,6 +1386,11 @@ Type *params(Token **token) {
     cur_ty = cur_ty->next;
 
     while (consume(token, ",")) {
+        if (consume(token, "...")) {
+            is_varlen = true;
+            break;
+        }
+
         Type *ty = declspec(token);
 
         cur->next = declarator(token, ty);
@@ -1402,6 +1408,7 @@ Type *params(Token **token) {
     }
 
     add_param_to_locals(head.next);
+    head_ty.next->is_varlen = is_varlen;
     return head_ty.next;
 }
 
@@ -1777,17 +1784,57 @@ Node *declaration(Token **token, bool is_global) {
     return node;
 }
 
-void allocate_stack_offset(Obj *func) {
-    int stack_size = 0;
-    for (Scope *scope = func->locals;scope;scope = scope->prev) {
+bool is_builtin_var_list(Type *type) {
+    return  type->kind == TyArray  &&
+            type->ptr_to->kind == TyStruct &&
+            type->ptr_to->type_struct->name_len == NAMELEN_BUILTIN_VA_LIST && 
+            strncmp(type->ptr_to->type_struct->name, "__builtin_va_elem", NAMELEN_BUILTIN_VA_LIST) == 0;
+}
+
+void allocate_stack_offset_varlen(Obj *func) {
+    // allocate 6 register save area
+    int stack_size = 8 * 6;
+    for (Obj *obj = func->args;obj;obj = obj->next) {
+        obj->offset = stack_size;
+        stack_size -= 8;
+    }
+    stack_size = 8 * 6 + SIZEOF_BUILTIN_VA_LIST;
+
+    // allocate local variable offset
+    for (Scope *scope = func->locals->prev;scope;scope = scope->prev) {
         for (Obj *obj = scope->objs;obj;obj = obj->next) {
+
+            if (is_builtin_var_list(obj->type)) { 
+                obj->offset = 8 * 6 + SIZEOF_BUILTIN_VA_LIST;
+                continue;
+            }
+
             int size = sizeof_type(obj->type);
             stack_size = align_to(stack_size, alignment(obj->type));
             stack_size += size;
             obj->offset = stack_size;
         }
     }
+
     func->stack_size = align_to(stack_size, 16);
+    return;
+}
+
+void allocate_stack_offset(Obj *func) {
+    if (func->type->is_varlen) {
+        allocate_stack_offset_varlen(func);
+    } else {
+        int stack_size = 0;
+        for (Scope *scope = func->locals;scope;scope = scope->prev) {
+            for (Obj *obj = scope->objs;obj;obj = obj->next) {
+                int size = sizeof_type(obj->type);
+                stack_size = align_to(stack_size, alignment(obj->type));
+                stack_size += size;
+                obj->offset = stack_size;
+            }
+        }
+        func->stack_size = align_to(stack_size, 16);
+    }
     return;
 }
 

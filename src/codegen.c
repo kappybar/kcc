@@ -547,6 +547,10 @@ void codegen_expr(Node *node) {
         strncpy(name, node->func_name, node->func_name_len);
         name[node->func_name_len] = '\0';
 
+        // for variable length argument
+        // the number of floaint pointer argument
+        println("  mov al, 0");
+
         if (depth % 16 != 0) {
             int diff = align_to(depth, 16) - depth;
             println("  sub rsp, %d # align", diff);
@@ -757,7 +761,7 @@ void codegen_function(Obj *func) {
     println("%s:", name);
 
     // prologue
-    // call                    depth -= 8;
+    // call                   depth -= 8;
     println("  push rbp"); // depth -= 8;
     println("  mov rbp, rsp");
     println("  sub rsp, %d", func->stack_size);
@@ -767,6 +771,13 @@ void codegen_function(Obj *func) {
         println("  lea rax, [rbp%+d]", -arg->offset);
         codegen_store(arg->type, args_reg64[i], args_reg32[i], args_reg16[i] ,args_reg8[i], "rax");
         i++;
+    }
+
+    // up to 6 variable length argument 
+    if (func->type->is_varlen) {
+        for (;i < 6; i++) {
+            println("  mov QWORD PTR [rbp%+d], %s", -8*(6-i), args_reg64[i]);
+        }
     }
 
     for (Node *cur = func->body;cur;cur = cur->next) {

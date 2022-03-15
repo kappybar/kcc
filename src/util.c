@@ -44,3 +44,7 @@ void error_at(char *loc, char *fmt, ...) {
     fprintf(stderr, "\n");
     exit(1);
 }
+
+// builtin
+const int SIZEOF_BUILTIN_VA_LIST = 24;
+const int NAMELEN_BUILTIN_VA_LIST = 17;

@@ -1,5 +1,25 @@
 
 
+struct __builtin_va_elem {
+  int gp_offset;
+  int fp_offset;
+  void *overflow_arg_area;
+  void *reg_save_area;
+};
+
+typedef struct __builtin_va_elem __builtin_va_list[1];
+#define __builtin_va_start(v, l) { char *vaddr = &v;char *laddr = &l; v->gp_offset = (laddr - (vaddr + 24)) + 8; v->fp_offset = 48;  v->overflow_arg_area = vaddr + 24 + 48 + 16; v->reg_save_area = vaddr + 24; }
+#define __builtin_va_end(v)
+
+// __builtin_va_start(v, l)
+// v : va_list
+// l : last named argument
+// v->gp_offset = (the number of named argument) * 8
+//                laddr - (vaddr + sizeof(__builtin_va_list)) + 8
+// v->fp_offset = 48 (= 6 argument * 8byte) (when the number of floating point argumet is 0)
+// v->overflow_arg_area = vaddr + sizeof(__builtin_va_list) + 48 (=6 argument * 8byte) + 16(= rbp(8byte) + return addr(8byte))
+// v->reg_save_area = vaddr + sizeof(__builtin_va_list)
+// 
 
 typedef __builtin_va_list __gnuc_va_list;
 typedef __gnuc_va_list va_list;
@@ -13,9 +33,6 @@ typedef __gnuc_va_list va_list;
 
 struct _IO_FILE;
 typedef struct _IO_FILE FILE;
-extern FILE *stdin;  /* Standard input stream.  */
-extern FILE *stdout; /* Standard output stream.  */
-extern FILE *stderr; /* Standard error output stream.  */
 extern int fclose(FILE *__stream);
 extern int fflush (FILE *__stream);
 extern FILE *fopen(const char *__filename, const char *__modes);
