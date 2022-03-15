@@ -16,11 +16,11 @@ int isreserved(char *p) {
     if (startwith(p, "<<=") || startwith(p, ">>=") || startwith(p, "...")) {
         return 3;
     }
-    char *len2tokens[] = {"<=", ">=", "==", "!=", "->",
-                          "<<", ">>",
-                          "&&", "||",
-                          "+=", "-=", "*=", "/=", "%=", "&=", "^=", "|=",
-                          "++", "--"};
+    char *len2tokens[19] = {"<=", ">=", "==", "!=", "->",
+                            "<<", ">>",
+                            "&&", "||",
+                            "+=", "-=", "*=", "/=", "%=", "&=", "^=", "|=",
+                            "++", "--"};
     for (int i = 0;i < sizeof(len2tokens) / sizeof(*len2tokens); i++) {
         if (startwith(p, len2tokens[i])) {
             return 2;
@@ -41,11 +41,11 @@ bool is_ident2(char *p) {
 }
 
 bool is_keyword(Token *token) {
-    char *keywords[] = {"return", "if", "else", "while", "for", "do", "switch", "case", "default",
-                        "sizeof", 
-                        "int", "char", "short", "long", "void",
-                        "struct", "union", "enum", "typedef", "extern", "static", "const",
-                        "break", "continue" };
+    char *keywords[24] = {"return", "if", "else", "while", "for", "do", "switch", "case", "default",
+                          "sizeof", 
+                          "int", "char", "short", "long", "void",
+                          "struct", "union", "enum", "typedef", "extern", "static", "const",
+                          "break", "continue" };
     for (int i = 0;i < sizeof(keywords) / sizeof(*keywords); i++) {
         if (token->len == strlen(keywords[i]) && strncmp(token->str, keywords[i], token->len) == 0) {
             return true;

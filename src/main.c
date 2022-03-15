@@ -2,6 +2,8 @@
 
 char *input_path;
 char *output_path;
+FILE *stdin_file;
+FILE *stderr_file;
 
 void parse_args(int argc, char *argv[]) {
     for (int i = 0;i < argc; i++) {
@@ -26,6 +28,14 @@ void parse_args(int argc, char *argv[]) {
 
 int main(int argc,char *argv[]) {
     parse_args(argc, argv);
+
+    #ifdef KCC_
+    stdin_file = fopen("in_file", "r");
+    if (!stdin_file) error("cannot open in_file");
+
+    stderr_file = fopen("err_file", "w");
+    if (!stderr_file) error("cannot open err_file");
+    #endif
 
     // tokenize
     Token *token = tokenize_file(input_path);

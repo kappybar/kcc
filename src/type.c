@@ -187,12 +187,10 @@ bool same_type(Type *ty1, Type *ty2) {
     if (ty1->kind == ty2->kind) {
         return true;
     }
-    if (is_integer(ty1) && is_integer(ty2)) {
+    if ((is_integer(ty1) || is_pointer(ty1)) && 
+        (is_integer(ty2) || is_pointer(ty2))) {
         return true;
     } 
-    if (is_pointer(ty1) && is_pointer(ty2)) {
-        return true;
-    }
     return false;
 }
 
