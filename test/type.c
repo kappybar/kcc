@@ -124,6 +124,8 @@ int main() {
     ASSERT(0, (char)256);
     ASSERT(0, (short)(1 << 16));
     ASSERT(0, (int)(char)256);
+    ASSERT(0, ({const int c = 0; c;}));
+    ASSERT(0, ({int const const c = 0; c;}));
     
     return 0;
 }

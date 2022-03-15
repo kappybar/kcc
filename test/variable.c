@@ -27,6 +27,7 @@ char addsub(int a, char b, int c, char d,int e, char f){
 }
 
 extern int ex1;
+extern int exf(int x);
 
 int main() {
 
@@ -81,6 +82,8 @@ int main() {
     ASSERT(2, ({extern int ex2; ex2;}));
     ASSERT(3, ({extern int ex2; ex2=3;}));
     ASSERT(4, ({extern int ex2; add(ex1, ex2);}));
+    ASSERT(2, exf(2));
+    ASSERT(5, exf(5));
 
 
     return 0;

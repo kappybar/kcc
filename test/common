@@ -4,6 +4,7 @@
 // extern
 int ex1 = 1;
 int ex2 = 2;
+int exf(int x) {return x;}
 
 void assert(int expected, int actual, char *code) {
     if (expected == actual) {

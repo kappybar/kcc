@@ -52,6 +52,10 @@ int index(int mat[2][2],int i,int j) {
     return mat[i][j];
 }
 
+char getsi(const char *s, int i){ 
+    return s[i];
+}
+
 int main() {
 
     ASSERT(10, ({int a; a = ten(); a;}));
@@ -65,6 +69,9 @@ int main() {
     ASSERT(13, ({int a[2];int b[2];int y; a[0] = b[1] = y = 3; add_arr3(a, y, b); }));
     ASSERT(3 , ({ int c[2]; ptr(c)[1] = 3; c[1]; }));
     ASSERT(3 , ({ int a[2][2]; a[1][0] = 3; index(a,1,0); }));
+    ASSERT(97, getsi("abc", 0));
+    ASSERT(98, getsi("abc", 1));
+    ASSERT(0, getsi("abc", 3));
 
     return 0;
 }

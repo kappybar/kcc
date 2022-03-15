@@ -299,6 +299,9 @@ Obj *new_obj(Token *token, Type *type) {
 
     obj->is_static = type->is_static_temp;
     type->is_static_temp = false;
+
+    obj->is_const = type->is_const_temp;
+    type->is_const_temp = false;
     return obj;
 }
 
@@ -314,6 +317,9 @@ Obj *new_fun(Token *token, Type *return_ty, Obj *params, Type *params_ty) {
 
     fn->is_static = return_ty->is_static_temp;
     return_ty->is_static_temp = false;
+
+    fn->is_const = return_ty->is_const_temp;
+    return_ty->is_const_temp = false;
     return fn;
 }
 
@@ -1339,7 +1345,7 @@ Node *compound_stmt(Token **token) {
     Scope *new_locals = next_locals();
 
     while(!consume(token, "}")) {
-        if (is_typename(*token) || is_stroge_spec(*token)) {
+        if (is_typename(*token) || is_stroge_spec(*token) || equal(*token, "const")) {
             cur->next = declaration(token, false);
             cur = cur->next;
         } else {
@@ -1601,10 +1607,10 @@ void enum_list(Token **token, Enum *enm) {
     return;
 }
 
-// declspec = (typespec | "typedef" | "extern" | "static")*
+// declspec = (typespec | "typedef" | "extern" | "static" | "const")*
 Type *declspec(Token **token) {
     Type *type = NULL;
-    int is_typdef = 0, is_extern = 0, is_static = 0;
+    int is_typdef = 0, is_extern = 0, is_static = 0, is_const = 0;
 
     while (1) {
         if (consume_keyword(token, "typedef")) {
@@ -1617,6 +1623,10 @@ Type *declspec(Token **token) {
         }
         if (consume_keyword(token, "static")) {
             is_static ++;
+            continue;
+        }
+        if (consume_keyword(token, "const")) {
+            is_const ++;
             continue;
         }
         if (is_typename(*token)) {
@@ -1640,6 +1650,7 @@ Type *declspec(Token **token) {
     type->is_typdef_temp = (is_typdef > 0);
     type->is_extern_temp = (is_extern > 0);
     type->is_static_temp = (is_static > 0);
+    type->is_const_temp  = (is_const  > 0);
 
     return type;
 }

@@ -83,6 +83,9 @@ struct Type {
     bool is_typdef_temp; 
     bool is_extern_temp;
     bool is_static_temp;
+
+    // type-qualifier
+    bool is_const_temp;
 };
 
 Type *new_type(TypeKind kind);
@@ -134,6 +137,9 @@ struct Obj {
     // storage class spec
     bool is_extern;
     bool is_static;
+
+    // type qualifier
+    bool is_const;
 };
 
 struct Struct {
