@@ -3,6 +3,7 @@
 char *input_path;
 char *output_path;
 FILE *stdin_file;
+FILE *stdout_file;
 FILE *stderr_file;
 
 void parse_args(int argc, char **argv) {
@@ -32,6 +33,9 @@ int main(int argc,char **argv) {
     #ifdef KCC_
     stdin_file = fopen("in_file", "r");
     if (!stdin_file) error("cannot open in_file");
+
+    stdout_file = fopen("out_file", "w");
+    if (!stdout_file) error("cannot open out_file");
 
     stderr_file = fopen("err_file", "w");
     if (!stderr_file) error("cannot open err_file");

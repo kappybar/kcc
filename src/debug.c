@@ -12,7 +12,7 @@ void display_function(Obj *func);
 
 void display_token(Token *token) {
     for (Token *cur = token;cur;cur = cur->next) {
-        char s[cur->len + 1];
+        char s[100];
         s[cur->len] = '\0';
         switch (cur->kind) {
         case TkReserved:
@@ -97,7 +97,7 @@ void display_type(Type *type) {
 }
 
 void display_lvar(Obj *obj) {
-    char s[obj->len + 1];
+    char s[100];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
     fprintf(stderr, "(%s, local var,  offset : %d,", s, obj->offset);
@@ -107,7 +107,7 @@ void display_lvar(Obj *obj) {
 }
 
 void display_gvar(Obj *obj) {
-    char s[obj->len + 1];
+    char s[100];
     strncpy(s, obj->name, obj->len);
     s[obj->len] = '\0';
     fprintf(stderr, "(%s, global var", s);
@@ -128,7 +128,7 @@ void display_obj(Obj *obj) {
 
 
 void display_space(int size) {
-    char s[size + 1];
+    char s[100];
     for (int i = 0;i < size; i++) s[i] = ' ';
     s[size] = '\0';
     fprintf(stderr, "%s", s);
@@ -417,7 +417,7 @@ void display_node(Node *node, int indent) {
         display_node(node->lhs, indent + 1);
         break;
     case NdFuncall: {
-        char name[node->func_name_len + 1];
+        char name[100];
         strncpy(name, node->func_name, node->func_name_len);
         name[node->func_name_len] = '\0';
         fprintf(stderr, "Funcall (name : %s)", name);

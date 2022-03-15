@@ -9,10 +9,10 @@ void codegen_expr(Node *node);
 void codegen_stmt(Node *node);
 void codegen_function(Obj *func);
 
-const char *args_reg64[] = {"rdi", "rsi", "rdx", "rcx", "r8" , "r9" };
-const char *args_reg32[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
-const char *args_reg16[] = {"di" , "si" , "dx" , "cx" , "r8w", "r9w"};
-const char *args_reg8[]  = {"dil", "sil", "dl" , "cl" , "r8b", "r9b"};
+const char *args_reg64[6] = {"rdi", "rsi", "rdx", "rcx", "r8" , "r9" };
+const char *args_reg32[6] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+const char *args_reg16[6] = {"di" , "si" , "dx" , "cx" , "r8w", "r9w"};
+const char *args_reg8[6]  = {"dil", "sil", "dl" , "cl" , "r8b", "r9b"};
 int depth = 0;
 FILE *output_file;
 
@@ -64,12 +64,12 @@ void codegen_gvar_init(Type *type, Node *init) {
         if (init->kind == NdNum) {
             println("  .quad %d", init->val);
         } else if (init->kind == NdGvar) {
-            char name[init->obj->len + 1];
+            char name[100];
             strncpy(name, init->obj->name, init->obj->len);
             name[init->obj->len] = '\0';
             println("  .quad %s", name);
         } else if (init->kind == NdRef) {
-            char name[init->lhs->obj->len + 1];
+            char name[100];
             strncpy(name, init->lhs->obj->name, init->lhs->obj->len);
             name[init->lhs->obj->len] = '\0';
             println("  .quad %s", name);
@@ -545,7 +545,7 @@ void codegen_expr(Node *node) {
         for (int i = num_of_arg - 1;i >= 0; i--) {
             stack_pop("  pop %s", args_reg64[i]);
         }
-        char name[node->func_name_len + 1];
+        char name[100];
         strncpy(name, node->func_name, node->func_name_len);
         name[node->func_name_len] = '\0';
 
@@ -751,7 +751,7 @@ void codegen_function(Obj *func) {
     }
     codegen_local_static(func);
 
-    char name[func->len + 1];
+    char name[100];
     strncpy(name, func->name, func->len);
     name[func->len] = '\0';
     println(".text");

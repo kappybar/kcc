@@ -2,6 +2,7 @@
 
 #ifdef KCC_
 #define stdin stdin_file
+#define stdout stdout_file
 #define stderr stderr_file
 #include "help.h"
 #else
@@ -28,6 +29,7 @@ typedef struct Node Node;
 
 extern char *input_path;
 extern FILE *stdin_file;
+extern FILE *stdout_file;
 extern FILE *stderr_file;
 
 //

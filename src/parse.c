@@ -476,7 +476,7 @@ Node *new_node(NodeKind kind) {
 }
 
 bool is_typename(Token *token) {
-    char *typenames[] = {"void", "long", "int", "char", "short", "struct", "union", "enum"};
+    char *typenames[8] = {"void", "long", "int", "char", "short", "struct", "union", "enum"};
     for (int i = 0;i < sizeof(typenames) / sizeof(*typenames); i++) {
         if (equal(token, typenames[i])) {
             return true;
@@ -489,7 +489,7 @@ bool is_typename(Token *token) {
 }
 
 bool is_stroge_spec(Token *token) {
-    char *storage_class_spec[] = {"extern", "static", "typedef"};
+    char *storage_class_spec[3] = {"extern", "static", "typedef"};
     for (int i = 0;i < sizeof(storage_class_spec) / sizeof(*storage_class_spec); i++) {
         if (equal(token, storage_class_spec[i])) {
             return true;
