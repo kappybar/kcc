@@ -10,6 +10,12 @@ Type *new_type_ptr(Type *ty) {
     Type *type = calloc(1, sizeof(Type));
     type->kind = TyPtr;
     type->ptr_to = ty;
+
+    type->is_const_temp = ty->is_const_temp;
+    type->is_extern_temp = ty->is_extern_temp;
+    type->is_static_temp = ty->is_static_temp;
+    type->is_typdef_temp = ty->is_typdef_temp;
+    type->is_varlen = ty->is_varlen;
     return type;
 }
 
@@ -18,6 +24,12 @@ Type *new_type_array(Type *ty, long size) {
     type->kind = TyArray;
     type->ptr_to = ty;
     type->array_size = size;
+
+    type->is_const_temp = ty->is_const_temp;
+    type->is_extern_temp = ty->is_extern_temp;
+    type->is_static_temp = ty->is_static_temp;
+    type->is_typdef_temp = ty->is_typdef_temp;
+    type->is_varlen = ty->is_varlen;
     return type;
 }
 

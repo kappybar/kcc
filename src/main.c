@@ -5,7 +5,7 @@ char *output_path;
 FILE *stdin_file;
 FILE *stderr_file;
 
-void parse_args(int argc, char *argv[]) {
+void parse_args(int argc, char **argv) {
     for (int i = 0;i < argc; i++) {
         if (strcmp(argv[i], "-o") == 0) {
             if (argv[i+1]) {
@@ -26,7 +26,7 @@ void parse_args(int argc, char *argv[]) {
     return;
 }
 
-int main(int argc,char *argv[]) {
+int main(int argc,char **argv) {
     parse_args(argc, argv);
 
     #ifdef KCC_

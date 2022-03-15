@@ -141,6 +141,7 @@ void codegen_case(Node *node) {
         println("  cmp rax, rdi");
         stack_push("  push rax");
         println("  je %s", node->label);
+        codegen_case(node->then);
         return;
     case NdBlock:
         for (Node *nd = node->body;nd;nd = nd->next) {
@@ -421,6 +422,7 @@ void codegen_stmt(Node *node) {
     }
     case NdCase : {
         if (!node->label) {
+            display_node(node, 0);
             error("case label not within switch statement\n");
         }
         println("%s:", node->label);

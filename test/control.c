@@ -69,6 +69,18 @@ int h(int n) {
     return s;
 }
 
+int gh(int x) {
+    switch (x) {
+    case 0:
+    case 1:
+        return 1;
+    case 2:
+        return 2;
+    default:
+        return 3;
+    }
+}
+
 int main() {
 
     ASSERT(7,  ({ int foo; int bar; foo = 3;bar = 4; foo + bar;}));
@@ -134,6 +146,10 @@ int main() {
     ASSERT(10, g(2, 5));
     ASSERT(334, h(10));
     ASSERT(122, h(5));
+    ASSERT(1, gh(0));
+    ASSERT(1, gh(1));
+    ASSERT(2, gh(2));
+    ASSERT(3, gh(3));
 
 
     return 0;
