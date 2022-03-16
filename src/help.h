@@ -37,6 +37,7 @@ extern int fclose(FILE *__stream);
 extern int fflush (FILE *__stream);
 extern FILE *fopen(const char *__filename, const char *__modes);
 extern FILE *open_memstream (char **__bufloc, long *__sizeloc);
+extern int printf(const char *__format, ...);
 extern int fprintf(FILE *__stream, const char *__format, ...);
 extern int sprintf (char *__s,const char *__format, ...);
 extern int vfprintf(FILE *__s, const char *__format, __gnuc_va_list __arg);
@@ -48,6 +49,7 @@ extern long fwrite (const void *__ptr, long __size, long __n, FILE *__s);
 // extern FILE *fopen (const char *__restrict __filename,
 //       const char *__restrict __modes) ;
 // extern FILE *open_memstream (char **__bufloc, size_t *__sizeloc) __attribute__ ((__nothrow__ , __leaf__)) ;
+// extern int printf(const char *__restrict __format, ...);
 // extern int fprintf (FILE *__restrict __stream,
 //       const char *__restrict __format, ...);
 // extern int sprintf (char *__restrict __s,

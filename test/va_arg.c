@@ -18,9 +18,10 @@ void vfprintf_test2(FILE *file, char *fmt, ...) {
 
 int main() {
     FILE *file = fopen("a.txt", "w");
-    fprintf(file, "THIS IS PPRINTF %d %d %d\n", 1, 2, 3);
+    fprintf(file, "THIS IS FPPRINTF %d %d %d\n", 1, 2, 3);
     vfprintf_test1(file, "THIS IS VFPRITF TEST %d %d %d %d\n", 1, 2, 3, 4);
     vfprintf_test2(file, "THIS IS VFPRITF TEST %d %d %d %d\n", 1, 2, 3, 4);
+    printf("THIS IS PRINTF TEST\n");
 
     fclose(file);
     return 0;
