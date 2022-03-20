@@ -9,7 +9,13 @@ make kcc
 
 ## Usage
 ```
-./kcc -o <output-file> <input-file>
+sh kcc.sh -o <output-file> <input-file>
+```
+
+## Run Examles
+```
+sh kcc.sh -o fib examples/fib.c
+./fib
 ```
 
 ## Features

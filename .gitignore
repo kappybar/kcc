@@ -1,6 +1,7 @@
 kcc*
-kcc.sh
+exec.sh
 debug
+!kcc.sh
 
 *.o
 tmp*
